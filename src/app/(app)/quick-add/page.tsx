@@ -74,6 +74,7 @@ export default async function QuickAddPage() {
             defaultDate={today}
             submitLabel="Record it"
             resetOnSuccess
+            queueWhenOffline
           />
         </CardContent>
       </Card>

@@ -3,41 +3,17 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { fail, formValues, invalid, ok, type ActionState } from "@/lib/actions/result";
+import { fail, invalid, ok, type ActionState } from "@/lib/actions/result";
 import { toMajorString } from "@/lib/money";
 import { transactionSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
+import { readTransactionForm } from "@/lib/transactions/payload";
 
 /** Screens whose data changes whenever a transaction does. */
 function revalidateTransactionViews() {
   revalidatePath("/transactions");
   revalidatePath("/dashboard");
   revalidatePath("/quick-add");
-}
-
-/**
- * Normalises the form payload before validation.
- *
- * The direction radio decides which of income_type / expense_nature is
- * meaningful, so the other is cleared here rather than being sent as an empty
- * string that would fail the schema for a confusing reason.
- */
-function readTransactionForm(formData: FormData) {
-  const values = formValues(formData);
-  const direction = values.direction;
-
-  const tagsRaw = typeof values.tags === "string" ? values.tags : "";
-  const tags = tagsRaw
-    .split(",")
-    .map((tag) => tag.trim())
-    .filter(Boolean);
-
-  return {
-    ...values,
-    tags,
-    incomeType: direction === "income" ? values.incomeType : null,
-    expenseNature: direction === "expense" ? values.expenseNature : null,
-  };
 }
 
 export async function createTransaction(

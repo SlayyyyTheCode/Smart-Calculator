@@ -5,7 +5,14 @@ import { isSupabaseConfigured, publicEnv } from "@/lib/env";
 import type { Database } from "@/types/database";
 
 /** Paths reachable without a session. Everything else redirects to /login. */
-const PUBLIC_PREFIXES = ["/login", "/auth", "/manifest.webmanifest", "/icons", "/offline"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/auth",
+  "/manifest.webmanifest",
+  "/icons",
+  "/offline",
+  "/sw.js",
+];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PREFIXES.some(

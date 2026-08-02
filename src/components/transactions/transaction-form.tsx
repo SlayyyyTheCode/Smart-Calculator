@@ -9,6 +9,8 @@ import { IDLE } from "@/lib/actions/result";
 import type { AccountOption } from "@/lib/data/accounts";
 import type { CategoryOption } from "@/lib/data/categories";
 import { BUDGET_LEVEL_STYLES, evaluateBudget } from "@/lib/domain/budget";
+import { enqueue } from "@/lib/offline/outbox";
+import { parseTransactionForm, withClientUuid } from "@/lib/transactions/payload";
 import { formatMoney, parseAmount, toMajorString } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { ExpenseNature, IncomeType, TransactionDirection } from "@/types/database";
@@ -57,6 +59,12 @@ type TransactionFormProps = {
   submitLabel?: string;
   /** Clear the form and stay put after a successful save. */
   resetOnSuccess?: boolean;
+  /**
+   * Save to the on-device outbox when there is no connection, instead of
+   * letting the submit fail. Only sensible for new entries: editing something
+   * offline would need the row it is editing to be there too.
+   */
+  queueWhenOffline?: boolean;
 };
 
 const NATURE_OPTIONS: { value: ExpenseNature; label: string; description: string }[] = [
@@ -83,8 +91,11 @@ export function TransactionForm({
   defaultDate,
   submitLabel = "Save",
   resetOnSuccess = false,
+  queueWhenOffline = false,
 }: TransactionFormProps) {
   const [state, formAction, isPending] = useActionState(action, IDLE);
+  /** Set only when an entry was handled locally instead of by the server. */
+  const [offlineState, setOfflineState] = useState<ActionState | null>(null);
 
   const [direction, setDirection] = useState<TransactionDirection>(initial?.direction ?? "expense");
   const [nature, setNature] = useState<ExpenseNature>(initial?.expenseNature ?? "daily");
@@ -122,6 +133,8 @@ export function TransactionForm({
   const [handledStatus, setHandledStatus] = useState(state.status);
   if (state.status !== handledStatus) {
     setHandledStatus(state.status);
+    // A reply from the server supersedes whatever the offline path last said.
+    setOfflineState(null);
     if (resetOnSuccess && state.status === "success") {
       setCategoryId("");
       // form.reset() cannot clear a controlled input, so it is cleared here.
@@ -138,7 +151,52 @@ export function TransactionForm({
     }
   }, [resetOnSuccess, state.status]);
 
-  const errors = state.fieldErrors ?? {};
+  /**
+   * With no connection, a server action submit just fails and the typing is
+   * lost. Instead the entry is validated here with the very same schema the
+   * server uses, stored in the outbox, and sent when the connection returns.
+   */
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    if (!queueWhenOffline || navigator.onLine) return;
+
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const parsed = parseTransactionForm(formData);
+
+    if (!parsed.ok) {
+      setOfflineState({
+        status: "error",
+        message: "Check the highlighted fields.",
+        fieldErrors: parsed.fieldErrors,
+      });
+      return;
+    }
+
+    try {
+      await enqueue(withClientUuid(parsed.value));
+    } catch {
+      setOfflineState({
+        status: "error",
+        message: "Could not save to this device. Check your browser storage settings.",
+      });
+      return;
+    }
+
+    setOfflineState({
+      status: "success",
+      message: "Saved on this device. It will sync when you are back online.",
+    });
+
+    if (resetOnSuccess) {
+      formRef.current?.reset();
+      setCategoryId("");
+      setAmountText("");
+      amountRef.current?.focus();
+    }
+  }
+
+  const active = offlineState ?? state;
+  const errors = active.fieldErrors ?? {};
 
   // What this entry would do to the budgets it touches. Only expenses count
   // against a budget, and an entry being edited is already included in `spent`,
@@ -153,7 +211,7 @@ export function TransactionForm({
     : [];
 
   return (
-    <form ref={formRef} action={formAction} className="space-y-5">
+    <form ref={formRef} action={formAction} onSubmit={handleSubmit} className="space-y-5">
       {initial?.id ? <input type="hidden" name="id" value={initial.id} /> : null}
 
       <Segmented
@@ -336,17 +394,17 @@ export function TransactionForm({
         </div>
       </details>
 
-      {state.message ? (
+      {active.message ? (
         <p
           role="status"
           className={cn(
             "text-sm",
-            state.status === "error"
+            active.status === "error"
               ? "text-rose-600 dark:text-rose-400"
               : "text-emerald-600 dark:text-emerald-400",
           )}
         >
-          {state.message}
+          {active.message}
         </p>
       ) : null}
 

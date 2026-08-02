@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { LogOut, Wallet } from "lucide-react";
 
+import { clearOfflineCaches } from "@/components/offline/service-worker";
+import { SyncStatus } from "@/components/offline/sync-status";
 import { Button } from "@/components/ui/button";
 import { findNavItem } from "@/lib/nav";
 
@@ -29,11 +31,21 @@ export function Topbar({ displayName, email }: TopbarProps) {
         </p>
       </div>
 
+      <SyncStatus />
+
       <span className="hidden max-w-40 truncate text-sm text-muted-foreground sm:inline">
         {who}
       </span>
 
-      <form action="/auth/signout" method="post">
+      <form
+        action="/auth/signout"
+        method="post"
+        onSubmit={() => {
+          // Cached pages are this user's HTML. Drop them before the session
+          // goes, so the next person on this device cannot see them offline.
+          void clearOfflineCaches();
+        }}
+      >
         <Button type="submit" variant="ghost" size="sm" aria-label="Sign out">
           <LogOut aria-hidden />
           <span className="hidden sm:inline">Sign out</span>

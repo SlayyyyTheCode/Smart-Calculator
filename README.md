@@ -18,10 +18,11 @@ the same data.
 
 Working today: sign-in, quick add, the transaction list with filters and
 editing, recurring rules that post themselves, budgets with warning indicators,
-a dashboard with the derived metrics, Excel and PDF export, and settings for
-your profile, categories and accounts. Offline entry, CSV import and the wealth
-screens are filled in phase by phase — each placeholder says which phase it
-lands in. The phase list is at the bottom of this file.
+a dashboard with the derived metrics, Excel and PDF export, installable-app
+support with offline quick add, and settings for your profile, categories and
+accounts. CSV import and the wealth screens are filled in phase by phase — each
+placeholder says which phase it lands in. The phase list is at the bottom of
+this file.
 
 The default currency is **SGD** with `en-SG` formatting and the
 `Asia/Singapore` timezone. Change any of those under Settings.
@@ -150,6 +151,24 @@ not shift across timezones.
 metrics and recurrence date math each live in exactly one module. SQL views
 aggregate; they never classify.
 
+## Offline
+
+Install the app from your phone's browser menu and quick add keeps working with
+no signal. An entry made offline is validated on the device with the same schema
+the server uses, stored in IndexedDB, and sent when the connection returns —
+automatically when you come back online or when you next focus the tab.
+
+Each queued entry carries a `client_uuid` generated on the device, and the
+database has a unique index on `(user_id, client_uuid)`. A flush that half
+succeeded and is retried therefore inserts nothing twice.
+
+Only writes are queued. Reading needs a connection, because a stale balance
+shown as current is worse than no balance. The service worker in `public/sw.js`
+is hand-written rather than generated: the bundler-integrated options do not
+support Turbopack, which Next 16 builds with, and silently produced no worker at
+all. Cached pages are cleared on sign-out, since they are HTML belonging to
+whoever was signed in.
+
 ## Phases
 
 | Phase | Scope | Status |
@@ -159,6 +178,6 @@ aggregate; they never classify.
 | 2 | Recurring engine, budgets, warning indicators | Done |
 | 3 | Dashboard, FIRE coverage, savings rate, runway | Done |
 | 4 | Excel and PDF export | Done |
-| 5 | PWA install and offline quick add | Next |
-| 6 | Receipt photos, CSV import | |
+| 5 | PWA install and offline quick add | Done |
+| 6 | Receipt photos, CSV import | Next |
 | 7 | Goals, debts, net worth | |
