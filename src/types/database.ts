@@ -190,6 +190,18 @@ export type CategorySpendRow = {
   transaction_count: number;
 };
 
+export type AccountBalanceRow = {
+  account_id: string;
+  user_id: string;
+  name: string;
+  type: AccountType;
+  currency: string;
+  is_liquid: boolean;
+  is_archived: boolean;
+  opening_balance: number;
+  balance: number;
+};
+
 export type BudgetStatusRow = {
   budget_id: string;
   user_id: string;
@@ -255,6 +267,7 @@ export type Database = {
       v_monthly_summary: ViewDef<MonthlySummaryRow>;
       v_category_spend: ViewDef<CategorySpendRow>;
       v_budget_status: ViewDef<BudgetStatusRow>;
+      v_account_balances: ViewDef<AccountBalanceRow>;
     };
     Functions: Record<string, never>;
     Enums: {
