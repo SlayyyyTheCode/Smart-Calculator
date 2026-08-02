@@ -34,7 +34,7 @@ export type ExportPayload = {
 
 const SELECT = `
   id, occurred_on, amount, direction, income_type, expense_nature, status,
-  merchant, note, tags, category_id, account_id, recurring_rule_id,
+  merchant, note, tags, category_id, account_id, recurring_rule_id, receipt_path,
   category:categories ( id, name, color ),
   account:accounts ( id, name )
 `;
@@ -53,6 +53,7 @@ type JoinedRow = {
   category_id: string | null;
   account_id: string | null;
   recurring_rule_id: string | null;
+  receipt_path: string | null;
   category: { id: string; name: string; color: string } | null;
   account: { id: string; name: string } | null;
 };
@@ -110,6 +111,7 @@ export async function getExportPayload(from: IsoDate, to: IsoDate): Promise<Expo
       accountId: row.account_id,
       accountName: row.account?.name ?? null,
       recurringRuleId: row.recurring_rule_id,
+      receiptPath: row.receipt_path,
     }),
   );
 

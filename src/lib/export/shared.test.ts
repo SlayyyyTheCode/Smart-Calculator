@@ -29,6 +29,7 @@ function transaction(overrides: Partial<TransactionListItem> = {}): TransactionL
     accountId: "a1",
     accountName: "Bank",
     recurringRuleId: null,
+    receiptPath: null,
     ...overrides,
   };
 }

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Pencil, Trash2 } from "lucide-react";
+import { Paperclip, Pencil, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { deleteTransaction } from "@/lib/actions/transactions";
@@ -78,6 +78,12 @@ export function TransactionList({ items, currency, locale }: TransactionListProp
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1.5">
+                    {item.receiptPath ? (
+                      <Paperclip
+                        className="size-3.5 text-muted-foreground"
+                        aria-label="Has a receipt"
+                      />
+                    ) : null}
                     {item.status === "draft" ? <Badge tone="warning">Draft</Badge> : null}
                     {item.expenseNature ? (
                       <Badge>{NATURE_LABEL[item.expenseNature]}</Badge>

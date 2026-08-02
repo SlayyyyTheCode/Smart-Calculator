@@ -30,6 +30,7 @@ function transaction(
     accountId: "bank",
     accountName: "DBS Multiplier",
     recurringRuleId: null,
+    receiptPath: null,
     ...overrides,
   };
 }

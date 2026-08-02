@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ReceiptField, RemoveReceiptButton } from "@/components/receipts/receipt-field";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { removeReceipt } from "@/lib/actions/receipts";
 import { deleteTransaction, updateTransaction } from "@/lib/actions/transactions";
+import { getReceiptUrl } from "@/lib/data/receipts";
 import { currencySymbol } from "@/lib/currency";
 import { listAccounts } from "@/lib/data/accounts";
 import { listCategories } from "@/lib/data/categories";
@@ -32,6 +35,8 @@ export default async function EditTransactionPage({
   // RLS returns nothing for someone else's row, so "not yours" and "not there"
   // are the same 404 — which is the right thing to leak, namely nothing.
   if (!transaction) notFound();
+
+  const receiptUrl = await getReceiptUrl(transaction.receiptPath);
 
   const isDraft = transaction.status === "draft";
 
@@ -71,6 +76,22 @@ export default async function EditTransactionPage({
             }}
             submitLabel={isDraft ? "Confirm entry" : "Save changes"}
           />
+        </CardContent>
+      </Card>
+
+      <Card className="mx-auto w-full max-w-lg">
+        <CardContent className="pt-5">
+          <ReceiptField
+            transactionId={transaction.id}
+            receiptUrl={receiptUrl}
+            isPdf={transaction.receiptPath?.toLowerCase().endsWith(".pdf") ?? false}
+          />
+          {receiptUrl ? (
+            <form action={removeReceipt} className="pt-2">
+              <input type="hidden" name="transactionId" value={transaction.id} />
+              <RemoveReceiptButton />
+            </form>
+          ) : null}
         </CardContent>
       </Card>
 
