@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Smart Planner">
+  <rect width="512" height="512" rx="112" fill="#4f46e5"/>
+  <path d="M136 190h240a28 28 0 0 1 28 28v120a28 28 0 0 1-28 28H136a28 28 0 0 1-28-28V218a28 28 0 0 1 28-28Z" fill="#ffffff" opacity="0.95"/>
+  <path d="M108 218a28 28 0 0 1 28-28h180l-24-44a24 24 0 0 0-32-10l-138 68a28 28 0 0 0-14 24Z" fill="#ffffff" opacity="0.6"/>
+  <circle cx="344" cy="278" r="20" fill="#4f46e5"/>
+</svg>

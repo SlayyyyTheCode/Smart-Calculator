@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/* Dark mode follows the OS by default, and can be forced by putting
+   data-theme="dark" (or "light") on <html>. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --background: oklch(0.99 0.003 250);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.97 0.005 250);
+  --foreground: oklch(0.21 0.02 260);
+  --muted-foreground: oklch(0.52 0.02 260);
+  --border: oklch(0.91 0.008 260);
+  --accent: oklch(0.55 0.19 260);
+  --accent-foreground: oklch(0.99 0.003 250);
+  --positive: oklch(0.65 0.16 155);
+  --warning: oklch(0.76 0.16 75);
+  --negative: oklch(0.62 0.21 20);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: oklch(0.17 0.015 265);
+    --surface: oklch(0.21 0.018 265);
+    --surface-muted: oklch(0.25 0.02 265);
+    --foreground: oklch(0.96 0.005 260);
+    --muted-foreground: oklch(0.70 0.02 260);
+    --border: oklch(0.32 0.02 265);
+    --accent: oklch(0.68 0.16 260);
+    --accent-foreground: oklch(0.17 0.015 265);
+    --positive: oklch(0.72 0.16 155);
+    --warning: oklch(0.80 0.15 75);
+    --negative: oklch(0.70 0.19 20);
+  }
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(0.99 0.003 250);
+  --surface: oklch(1 0 0);
+  --surface-muted: oklch(0.97 0.005 250);
+  --foreground: oklch(0.21 0.02 260);
+  --muted-foreground: oklch(0.52 0.02 260);
+  --border: oklch(0.91 0.008 260);
+  --accent: oklch(0.55 0.19 260);
+  --accent-foreground: oklch(0.99 0.003 250);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: oklch(0.17 0.015 265);
+  --surface: oklch(0.21 0.018 265);
+  --surface-muted: oklch(0.25 0.02 265);
+  --foreground: oklch(0.96 0.005 260);
+  --muted-foreground: oklch(0.70 0.02 260);
+  --border: oklch(0.32 0.02 265);
+  --accent: oklch(0.68 0.16 260);
+  --accent-foreground: oklch(0.17 0.015 265);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-positive: var(--positive);
+  --color-warning: var(--warning);
+  --color-negative: var(--negative);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+* {
+  border-color: var(--border);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Keep the mobile tab bar clear of the home indicator on iOS. */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Amounts line up column to column when they share a tabular figure width. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
