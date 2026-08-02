@@ -5,6 +5,11 @@ import { Check, Circle } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PhaseNotice } from "@/components/ui/phase-notice";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BudgetStatusList } from "@/components/budgets/budget-status-list";
+import { listBudgetStatus } from "@/lib/data/budgets";
+import { getFormatting } from "@/lib/data/profile";
+import { countPendingDrafts } from "@/lib/data/recurring";
+import { formatMonthLabel, startOfMonth, todayIso } from "@/lib/date";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +29,13 @@ type SetupStep = {
  */
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const formatting = await getFormatting();
+  const periodMonth = startOfMonth(todayIso(formatting.timezone));
+
+  const [budgetStatuses, draftCount] = await Promise.all([
+    listBudgetStatus(periodMonth),
+    countPendingDrafts(),
+  ]);
 
   const [categories, accounts, transactions, budgets, recurring] = await Promise.all([
     supabase.from("categories").select("id", { count: "exact", head: true }),
@@ -74,6 +86,50 @@ export default async function DashboardPage() {
         title="Dashboard"
         description="Where your money went this month, how close you are to your budgets, and how much of your spending your passive income already covers."
       />
+
+      {draftCount > 0 ? (
+        <Link
+          href="/transactions?status=draft&month=all"
+          className="flex flex-wrap items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm transition-colors hover:bg-amber-500/15"
+        >
+          <span className="font-medium text-amber-700 dark:text-amber-400">
+            {draftCount} {draftCount === 1 ? "draft needs" : "drafts need"} a real amount
+          </span>
+          <span className="text-muted-foreground">
+            — forecast from your recurring rules, and left out of these totals until confirmed.
+          </span>
+        </Link>
+      ) : null}
+
+      {budgetStatuses.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Budgets · {formatMonthLabel(periodMonth, formatting.locale)}
+            </CardTitle>
+            <CardDescription>
+              {budgetStatuses.some((status) => status.evaluation.level !== "ok")
+                ? "The ones needing attention are first."
+                : "Everything is inside its limit."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BudgetStatusList
+              statuses={budgetStatuses.slice(0, 5)}
+              currency={formatting.currency}
+              locale={formatting.locale}
+            />
+            {budgetStatuses.length > 5 ? (
+              <Link
+                href="/budgets"
+                className="mt-3 inline-block text-sm text-accent hover:underline"
+              >
+                See all {budgetStatuses.length} budgets →
+              </Link>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

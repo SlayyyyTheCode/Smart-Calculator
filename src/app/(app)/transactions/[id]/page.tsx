@@ -53,6 +53,8 @@ export default async function EditTransactionPage({
             categories={categories}
             accounts={accounts}
             currencySymbol={currencySymbol(formatting.currency, formatting.locale)}
+            currency={formatting.currency}
+            locale={formatting.locale}
             defaultDate={todayIso(formatting.timezone)}
             initial={{
               id: transaction.id,

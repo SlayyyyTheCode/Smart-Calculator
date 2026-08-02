@@ -17,10 +17,11 @@ the same data.
 ## Build status
 
 Working today: sign-in, quick add, the transaction list with filters and
-editing, and settings for your profile, categories and accounts. Budgets, the
-dashboard, exports, offline entry, CSV import and the wealth screens are filled
-in phase by phase — each placeholder says which phase it lands in. The phase
-list is at the bottom of this file.
+editing, recurring rules that post themselves, budgets with warning indicators,
+and settings for your profile, categories and accounts. The dashboard, exports,
+offline entry, CSV import and the wealth screens are filled in phase by phase —
+each placeholder says which phase it lands in. The phase list is at the bottom
+of this file.
 
 The default currency is **SGD** with `en-SG` formatting and the
 `Asia/Singapore` timezone. Change any of those under Settings.
@@ -155,8 +156,8 @@ aggregate; they never classify.
 | --- | --- | --- |
 | 0 | Scaffold, auth, shell, schema, RLS | Done |
 | 1 | Categories, accounts, transactions CRUD, quick add | Done |
-| 2 | Recurring engine, budgets, warning indicators | Next |
-| 3 | Dashboard, FIRE coverage, savings rate, runway | |
+| 2 | Recurring engine, budgets, warning indicators | Done |
+| 3 | Dashboard, FIRE coverage, savings rate, runway | Next |
 | 4 | Excel and PDF export | |
 | 5 | PWA install and offline quick add | |
 | 6 | Receipt photos, CSV import | |
