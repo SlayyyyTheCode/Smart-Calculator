@@ -18,10 +18,10 @@ the same data.
 
 Working today: sign-in, quick add, the transaction list with filters and
 editing, recurring rules that post themselves, budgets with warning indicators,
-a dashboard with the derived metrics, and settings for your profile, categories
-and accounts. Exports, offline entry, CSV import and the wealth screens are
-filled in phase by phase — each placeholder says which phase it lands in. The
-phase list is at the bottom of this file.
+a dashboard with the derived metrics, Excel and PDF export, and settings for
+your profile, categories and accounts. Offline entry, CSV import and the wealth
+screens are filled in phase by phase — each placeholder says which phase it
+lands in. The phase list is at the bottom of this file.
 
 The default currency is **SGD** with `en-SG` formatting and the
 `Asia/Singapore` timezone. Change any of those under Settings.
@@ -158,7 +158,7 @@ aggregate; they never classify.
 | 1 | Categories, accounts, transactions CRUD, quick add | Done |
 | 2 | Recurring engine, budgets, warning indicators | Done |
 | 3 | Dashboard, FIRE coverage, savings rate, runway | Done |
-| 4 | Excel and PDF export | Next |
-| 5 | PWA install and offline quick add | |
+| 4 | Excel and PDF export | Done |
+| 5 | PWA install and offline quick add | Next |
 | 6 | Receipt photos, CSV import | |
 | 7 | Goals, debts, net worth | |

@@ -7,6 +7,7 @@ import {
   daysInMonth,
   endOfMonth,
   lastNMonths,
+  monthsBetween,
   parseIsoDate,
   startOfMonth,
   todayIso,
@@ -64,6 +65,42 @@ describe("compareIsoDates", () => {
     expect(compareIsoDates("2026-01-01", "2026-02-01")).toBeLessThan(0);
     expect(compareIsoDates("2026-02-01", "2026-01-01")).toBeGreaterThan(0);
     expect(compareIsoDates("2026-01-01", "2026-01-01")).toBe(0);
+  });
+});
+
+describe("monthsBetween", () => {
+  it("includes both ends", () => {
+    expect(monthsBetween("2026-01-01", "2026-04-01")).toEqual([
+      "2026-01-01",
+      "2026-02-01",
+      "2026-03-01",
+      "2026-04-01",
+    ]);
+  });
+
+  it("normalises any day in a month to that month", () => {
+    expect(monthsBetween("2026-01-17", "2026-02-28")).toEqual(["2026-01-01", "2026-02-01"]);
+  });
+
+  it("returns the single month when both ends match", () => {
+    expect(monthsBetween("2026-05-09", "2026-05-30")).toEqual(["2026-05-01"]);
+  });
+
+  it("is empty when the range runs backwards", () => {
+    expect(monthsBetween("2026-06-01", "2026-01-01")).toEqual([]);
+  });
+
+  it("crosses years", () => {
+    expect(monthsBetween("2025-11-01", "2026-02-01")).toEqual([
+      "2025-11-01",
+      "2025-12-01",
+      "2026-01-01",
+      "2026-02-01",
+    ]);
+  });
+
+  it("stops at the cap rather than running away", () => {
+    expect(monthsBetween("2000-01-01", "2099-01-01", 12)).toHaveLength(12);
   });
 });
 

@@ -89,6 +89,24 @@ export function compareIsoDates(a: IsoDate, b: IsoDate): number {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
+/**
+ * Every month start from `from` to `to` inclusive, oldest first.
+ * Returns empty when the range runs backwards, so a bad range exports nothing
+ * rather than looping.
+ */
+export function monthsBetween(from: IsoDate, to: IsoDate, maxMonths = 240): IsoDate[] {
+  const start = startOfMonth(from);
+  const end = startOfMonth(to);
+  if (compareIsoDates(start, end) > 0) return [];
+
+  const months: IsoDate[] = [];
+  for (let month = start; compareIsoDates(month, end) <= 0; month = addMonths(month, 1)) {
+    months.push(month);
+    if (months.length >= maxMonths) break;
+  }
+  return months;
+}
+
 /** The `count` months ending with the month of `date`, oldest first. */
 export function lastNMonths(date: IsoDate, count: number): IsoDate[] {
   const anchor = startOfMonth(date);
