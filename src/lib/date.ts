@@ -8,6 +8,8 @@
  * plain year/month/day integers instead.
  */
 
+import { DEFAULT_LOCALE } from "@/lib/currency";
+
 export type IsoDate = string; // YYYY-MM-DD
 
 export type DateParts = { year: number; month: number; day: number }; // month is 1-12
@@ -94,7 +96,7 @@ export function lastNMonths(date: IsoDate, count: number): IsoDate[] {
 }
 
 /** "March 2026" style label for a month-start date. */
-export function formatMonthLabel(month: IsoDate, locale = "en-US"): string {
+export function formatMonthLabel(month: IsoDate, locale = DEFAULT_LOCALE): string {
   const { year, month: m } = parseIsoDate(month);
   return new Intl.DateTimeFormat(locale, {
     month: "long",
@@ -104,7 +106,7 @@ export function formatMonthLabel(month: IsoDate, locale = "en-US"): string {
 }
 
 /** "31 Mar 2026" style label for a full date. */
-export function formatDateLabel(date: IsoDate, locale = "en-US"): string {
+export function formatDateLabel(date: IsoDate, locale = DEFAULT_LOCALE): string {
   const { year, month, day } = parseIsoDate(date);
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",

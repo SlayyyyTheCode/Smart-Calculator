@@ -7,6 +7,8 @@
  * conversions live here and nowhere else.
  */
 
+import { DEFAULT_CURRENCY, DEFAULT_LOCALE } from "@/lib/currency";
+
 /** An integer number of minor units, e.g. 1234 means 12.34. */
 export type Minor = number;
 
@@ -81,8 +83,8 @@ export function scaleMinor(minor: Minor, factor: number): Minor {
 
 export function formatMoney(
   minor: Minor,
-  currency = "USD",
-  locale = "en-US",
+  currency = DEFAULT_CURRENCY,
+  locale = DEFAULT_LOCALE,
   options: Intl.NumberFormatOptions = {},
 ): string {
   return new Intl.NumberFormat(locale, {
@@ -100,7 +102,7 @@ export function formatMoneyCompact(minor: Minor, currency = "USD", locale = "en-
   });
 }
 
-export function formatPercent(ratio: number, locale = "en-US", digits = 0): string {
+export function formatPercent(ratio: number, locale = DEFAULT_LOCALE, digits = 0): string {
   return new Intl.NumberFormat(locale, {
     style: "percent",
     minimumFractionDigits: digits,

@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { parseAmount } from "@/lib/money";
 
 const isoDate = z
@@ -173,7 +174,7 @@ export const categorySchema = z.object({
 export const accountSchema = z.object({
   name: z.string().trim().min(1, "Name the account").max(60),
   type: accountTypeSchema.default("bank"),
-  currency: z.string().length(3).toUpperCase().default("USD"),
+  currency: z.string().length(3).toUpperCase().default(DEFAULT_CURRENCY),
   openingBalance: z
     .union([z.string(), z.number()])
     .transform((value) => parseAmount(value) ?? 0)
@@ -214,7 +215,7 @@ export const assetSchema = z.object({
   name: z.string().trim().min(1).max(80),
   type: assetTypeSchema.default("investment"),
   value: amountMinor,
-  currency: z.string().length(3).toUpperCase().default("USD"),
+  currency: z.string().length(3).toUpperCase().default(DEFAULT_CURRENCY),
   asOf: isoDate,
   note: z.string().trim().max(500).nullish(),
 });

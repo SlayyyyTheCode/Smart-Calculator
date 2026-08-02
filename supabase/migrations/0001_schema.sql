@@ -53,9 +53,9 @@ $$;
 create table public.profiles (
   id              uuid primary key references auth.users (id) on delete cascade,
   display_name    text,
-  base_currency   char(3) not null default 'USD',
-  locale          text    not null default 'en-US',
-  timezone        text    not null default 'UTC',
+  base_currency   char(3) not null default 'SGD',
+  locale          text    not null default 'en-SG',
+  timezone        text    not null default 'Asia/Singapore',
   -- supports salary-cycle months, e.g. 25 => a "month" runs 25th to 24th
   month_start_day smallint not null default 1 check (month_start_day between 1 and 28),
   onboarded_at    timestamptz,
@@ -102,7 +102,7 @@ create table public.accounts (
   user_id         uuid not null references auth.users (id) on delete cascade,
   name            text not null,
   type            account_type not null default 'bank',
-  currency        char(3) not null default 'USD',
+  currency        char(3) not null default 'SGD',
   opening_balance numeric(14, 2) not null default 0,
   -- liquid accounts count toward the runway calculation
   is_liquid       boolean not null default true,
@@ -289,7 +289,7 @@ create table public.assets (
   name       text not null,
   type       asset_type not null default 'investment',
   value      numeric(14, 2) not null check (value >= 0),
-  currency   char(3) not null default 'USD',
+  currency   char(3) not null default 'SGD',
   as_of      date not null default current_date,
   note       text,
   created_at timestamptz not null default now(),

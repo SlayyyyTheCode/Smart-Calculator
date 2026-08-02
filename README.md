@@ -16,10 +16,14 @@ the same data.
 
 ## Build status
 
-The skeleton is complete: project scaffold, authentication, the full database
-schema with row level security, the app shell, and every route in place. Feature
-screens are filled in phase by phase — each placeholder says which phase it
-lands in. The phase list is at the bottom of this file.
+Working today: sign-in, quick add, the transaction list with filters and
+editing, and settings for your profile, categories and accounts. Budgets, the
+dashboard, exports, offline entry, CSV import and the wealth screens are filled
+in phase by phase — each placeholder says which phase it lands in. The phase
+list is at the bottom of this file.
+
+The default currency is **SGD** with `en-SG` formatting and the
+`Asia/Singapore` timezone. Change any of those under Settings.
 
 ## Setup
 
@@ -150,8 +154,8 @@ aggregate; they never classify.
 | Phase | Scope | Status |
 | --- | --- | --- |
 | 0 | Scaffold, auth, shell, schema, RLS | Done |
-| 1 | Categories, accounts, transactions CRUD, quick add | Next |
-| 2 | Recurring engine, budgets, warning indicators | |
+| 1 | Categories, accounts, transactions CRUD, quick add | Done |
+| 2 | Recurring engine, budgets, warning indicators | Next |
 | 3 | Dashboard, FIRE coverage, savings rate, runway | |
 | 4 | Excel and PDF export | |
 | 5 | PWA install and offline quick add | |
