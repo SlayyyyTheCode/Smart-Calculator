@@ -5,7 +5,6 @@ import { CategoryManager } from "@/components/settings/category-manager";
 import { ProfileForm } from "@/components/settings/profile-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { PhaseNotice } from "@/components/ui/phase-notice";
 import { listAllAccounts } from "@/lib/data/accounts";
 import { listAllCategories } from "@/lib/data/categories";
 import { getFormatting, getProfile } from "@/lib/data/profile";
@@ -67,10 +66,6 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
 
-      <PhaseNotice phase="phase 2">
-        Budget warning thresholds move here once budgets exist, so you can set a different trigger
-        point per category.
-      </PhaseNotice>
     </>
   );
 }

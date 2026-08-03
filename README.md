@@ -16,13 +16,17 @@ the same data.
 
 ## Build status
 
-Working today: sign-in, quick add, the transaction list with filters and
-editing, recurring rules that post themselves, budgets with warning indicators,
-a dashboard with the derived metrics, Excel and PDF export, installable-app
-support with offline quick add, receipt photos, CSV import, and settings for
-your profile, categories and accounts. The wealth screens — goals, debts and net
-worth — are the last phase; their placeholders say so. The phase list is at the
-bottom of this file.
+All seven phases are complete. Every screen listed above is built: sign-in,
+quick add, the transaction list, recurring rules that post themselves, budgets
+with warning indicators, the dashboard and its derived metrics, Excel and PDF
+export, installable-app support with offline quick add, receipt photos, CSV
+import, goals, debts and net worth.
+
+**It has never been run against a live database.** The schema, the row level
+security policies, the views and the Storage bucket are all written and
+type-checked, but no query in this repository has executed against a real
+Supabase project. Set one up (below) before trusting any figure it shows you,
+and expect to fix things the first time through.
 
 The default currency is **SGD** with `en-SG` formatting and the
 `Asia/Singapore` timezone. Change any of those under Settings.
@@ -180,4 +184,4 @@ whoever was signed in.
 | 4 | Excel and PDF export | Done |
 | 5 | PWA install and offline quick add | Done |
 | 6 | Receipt photos, CSV import | Done |
-| 7 | Goals, debts, net worth | Next |
+| 7 | Goals, debts, net worth | Done |
