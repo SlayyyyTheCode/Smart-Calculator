@@ -59,6 +59,13 @@ begin
 end;
 $$;
 
+-- Dropped first so a push that failed part way through can be retried without
+-- the second run erroring on "already exists" and hiding the original cause.
+-- Creating a trigger on auth.users needs ownership of it; the postgres role the
+-- CLI connects as has that. If this line fails with "must be owner of relation
+-- users", run it from the dashboard SQL editor instead.
+drop trigger if exists on_auth_user_created on auth.users;
+
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
