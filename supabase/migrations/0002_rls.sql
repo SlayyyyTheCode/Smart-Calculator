@@ -60,20 +60,23 @@ begin
     'import_batches'
   ]
   loop
+    -- Both placeholders are %I. A policy name is an identifier, not a string,
+    -- so %L would emit 'categories: read own' where "categories: read own" is
+    -- required, and Postgres rejects it as a syntax error.
     execute format(
-      'create policy %L on public.%I for select using ((select auth.uid()) = user_id)',
+      'create policy %I on public.%I for select using ((select auth.uid()) = user_id)',
       tbl || ': read own', tbl
     );
     execute format(
-      'create policy %L on public.%I for insert with check ((select auth.uid()) = user_id)',
+      'create policy %I on public.%I for insert with check ((select auth.uid()) = user_id)',
       tbl || ': insert own', tbl
     );
     execute format(
-      'create policy %L on public.%I for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)',
+      'create policy %I on public.%I for update using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id)',
       tbl || ': update own', tbl
     );
     execute format(
-      'create policy %L on public.%I for delete using ((select auth.uid()) = user_id)',
+      'create policy %I on public.%I for delete using ((select auth.uid()) = user_id)',
       tbl || ': delete own', tbl
     );
   end loop;

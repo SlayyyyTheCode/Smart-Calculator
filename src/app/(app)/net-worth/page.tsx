@@ -4,9 +4,9 @@ import { PiggyBank, Trash2 } from "lucide-react";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Input, Select } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
-import { EntityForm } from "@/components/wealth/entity-form";
+import { EntityField, EntityForm } from "@/components/wealth/entity-form";
 import { NetWorthChart } from "@/components/wealth/net-worth-chart";
 import { SnapshotButton } from "@/components/wealth/snapshot-button";
 import { deleteAsset, saveAsset } from "@/lib/actions/wealth";
@@ -175,48 +175,46 @@ export default async function NetWorthPage() {
         </CardHeader>
         <CardContent>
           <EntityForm action={saveAsset} submitLabel="Add asset">
-            {(errors) => (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <Field label="Name" htmlFor="asset-name" error={errors.name}>
-                  <Input id="asset-name" name="name" required placeholder="e.g. Flat" />
-                </Field>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <EntityField name="name" label="Name" htmlFor="asset-name">
+                <Input id="asset-name" name="name" required placeholder="e.g. Flat" />
+              </EntityField>
 
-                <Field label="Type" htmlFor="asset-type" error={errors.type}>
-                  <Select id="asset-type" name="type" defaultValue="investment">
-                    {ASSET_TYPES.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
+              <EntityField name="type" label="Type" htmlFor="asset-type">
+                <Select id="asset-type" name="type" defaultValue="investment">
+                  {ASSET_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </Select>
+              </EntityField>
 
-                <Field label="Value" htmlFor="asset-value" error={errors.value}>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {symbol}
-                    </span>
-                    <Input
-                      id="asset-value"
-                      name="value"
-                      inputMode="decimal"
-                      required
-                      placeholder="0.00"
-                      className="pl-9 tabular"
-                    />
-                  </div>
-                </Field>
+              <EntityField name="value" label="Value" htmlFor="asset-value">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {symbol}
+                  </span>
+                  <Input
+                    id="asset-value"
+                    name="value"
+                    inputMode="decimal"
+                    required
+                    placeholder="0.00"
+                    className="pl-9 tabular"
+                  />
+                </div>
+              </EntityField>
 
-                <Field
-                  label="Valued on"
-                  htmlFor="asset-asof"
-                  error={errors.asOf}
-                  hint="When this figure was accurate."
-                >
-                  <Input id="asset-asof" name="asOf" type="date" required defaultValue={today} />
-                </Field>
-              </div>
-            )}
+              <EntityField
+                name="asOf"
+                label="Valued on"
+                htmlFor="asset-asof"
+                hint="When this figure was accurate."
+              >
+                <Input id="asset-asof" name="asOf" type="date" required defaultValue={today} />
+              </EntityField>
+            </div>
           </EntityForm>
         </CardContent>
       </Card>

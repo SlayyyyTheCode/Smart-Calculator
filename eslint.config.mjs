@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Scratch state written by the Supabase CLI while the local stack runs.
+    // It contains bundled vendor JavaScript, so linting it reports a hundred
+    // failures in code nobody here wrote.
+    "supabase/.temp/**",
+    "supabase/.branches/**",
   ]),
   {
     rules: {

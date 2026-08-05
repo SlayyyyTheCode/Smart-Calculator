@@ -4,9 +4,9 @@ import { Target } from "lucide-react";
 import { StatTile } from "@/components/dashboard/stat-tile";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Field, Input, Textarea } from "@/components/ui/field";
+import { Input, Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
-import { EntityForm } from "@/components/wealth/entity-form";
+import { EntityField, EntityForm } from "@/components/wealth/entity-form";
 import { GoalList } from "@/components/wealth/goal-list";
 import { saveGoal } from "@/lib/actions/wealth";
 import { currencySymbol } from "@/lib/currency";
@@ -77,58 +77,50 @@ export default async function GoalsPage() {
         </CardHeader>
         <CardContent>
           <EntityForm action={saveGoal} submitLabel="Add goal">
-            {(errors) => (
-              <>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Name" htmlFor="goal-name" error={errors.name}>
-                    <Input id="goal-name" name="name" required placeholder="e.g. Japan trip" />
-                  </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <EntityField name="name" label="Name" htmlFor="goal-name">
+                <Input id="goal-name" name="name" required placeholder="e.g. Japan trip" />
+              </EntityField>
 
-                  <Field label="Target amount" htmlFor="goal-target" error={errors.targetAmount}>
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        {symbol}
-                      </span>
-                      <Input
-                        id="goal-target"
-                        name="targetAmount"
-                        inputMode="decimal"
-                        required
-                        placeholder="0.00"
-                        className="pl-9 tabular"
-                      />
-                    </div>
-                  </Field>
-
-                  <Field
-                    label="Already saved"
-                    htmlFor="goal-current"
-                    error={errors.currentAmount}
-                  >
-                    <div className="relative">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                        {symbol}
-                      </span>
-                      <Input
-                        id="goal-current"
-                        name="currentAmount"
-                        inputMode="decimal"
-                        placeholder="0.00"
-                        className="pl-9 tabular"
-                      />
-                    </div>
-                  </Field>
-
-                  <Field label="Target date" htmlFor="goal-date" error={errors.targetDate}>
-                    <Input id="goal-date" name="targetDate" type="date" />
-                  </Field>
+              <EntityField name="targetAmount" label="Target amount" htmlFor="goal-target">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {symbol}
+                  </span>
+                  <Input
+                    id="goal-target"
+                    name="targetAmount"
+                    inputMode="decimal"
+                    required
+                    placeholder="0.00"
+                    className="pl-9 tabular"
+                  />
                 </div>
+              </EntityField>
 
-                <Field label="Note" htmlFor="goal-note" error={errors.note}>
-                  <Textarea id="goal-note" name="note" />
-                </Field>
-              </>
-            )}
+              <EntityField name="currentAmount" label="Already saved" htmlFor="goal-current">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {symbol}
+                  </span>
+                  <Input
+                    id="goal-current"
+                    name="currentAmount"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="pl-9 tabular"
+                  />
+                </div>
+              </EntityField>
+
+              <EntityField name="targetDate" label="Target date" htmlFor="goal-date">
+                <Input id="goal-date" name="targetDate" type="date" />
+              </EntityField>
+            </div>
+
+            <EntityField name="note" label="Note" htmlFor="goal-note">
+              <Textarea id="goal-note" name="note" />
+            </EntityField>
           </EntityForm>
         </CardContent>
       </Card>

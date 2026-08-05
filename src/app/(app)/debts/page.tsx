@@ -5,10 +5,10 @@ import { StatTile } from "@/components/dashboard/stat-tile";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Input, Select } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
 import { ProgressBar } from "@/components/ui/progress-bar";
-import { EntityForm } from "@/components/wealth/entity-form";
+import { EntityField, EntityForm } from "@/components/wealth/entity-form";
 import { deleteDebt, saveDebt } from "@/lib/actions/wealth";
 import { currencySymbol } from "@/lib/currency";
 import { listAccounts } from "@/lib/data/accounts";
@@ -168,107 +168,95 @@ export default async function DebtsPage() {
         </CardHeader>
         <CardContent>
           <EntityForm action={saveDebt} submitLabel="Add debt">
-            {(errors) => (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Field label="Name" htmlFor="debt-name" error={errors.name}>
-                  <Input id="debt-name" name="name" required placeholder="e.g. Car loan" />
-                </Field>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <EntityField name="name" label="Name" htmlFor="debt-name">
+                <Input id="debt-name" name="name" required placeholder="e.g. Car loan" />
+              </EntityField>
 
-                <Field label="Amount borrowed" htmlFor="debt-principal" error={errors.principal}>
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {symbol}
-                    </span>
-                    <Input
-                      id="debt-principal"
-                      name="principal"
-                      inputMode="decimal"
-                      required
-                      placeholder="0.00"
-                      className="pl-9 tabular"
-                    />
-                  </div>
-                </Field>
-
-                <Field
-                  label="Still owed"
-                  htmlFor="debt-remaining"
-                  error={errors.remainingBalance}
-                  hint="Leave blank if you have not paid any of it yet."
-                >
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {symbol}
-                    </span>
-                    <Input
-                      id="debt-remaining"
-                      name="remainingBalance"
-                      inputMode="decimal"
-                      placeholder="Same as borrowed"
-                      className="pl-9 tabular"
-                    />
-                  </div>
-                </Field>
-
-                <Field label="Interest rate" htmlFor="debt-apr" error={errors.apr}>
-                  <div className="relative">
-                    <Input
-                      id="debt-apr"
-                      name="apr"
-                      type="number"
-                      step="0.01"
-                      min={0}
-                      max={200}
-                      defaultValue="0"
-                      className="tabular pr-8"
-                    />
-                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      %
-                    </span>
-                  </div>
-                </Field>
-
-                <Field
-                  label="Monthly payment"
-                  htmlFor="debt-payment"
-                  error={errors.minimumPayment}
-                >
-                  <div className="relative">
-                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      {symbol}
-                    </span>
-                    <Input
-                      id="debt-payment"
-                      name="minimumPayment"
-                      inputMode="decimal"
-                      placeholder="0.00"
-                      className="pl-9 tabular"
-                    />
-                  </div>
-                </Field>
-
-                <Field label="Started" htmlFor="debt-start" error={errors.startDate}>
+              <EntityField name="principal" label="Amount borrowed" htmlFor="debt-principal">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {symbol}
+                  </span>
                   <Input
-                    id="debt-start"
-                    name="startDate"
-                    type="date"
+                    id="debt-principal"
+                    name="principal"
+                    inputMode="decimal"
                     required
-                    defaultValue={today}
+                    placeholder="0.00"
+                    className="pl-9 tabular"
                   />
-                </Field>
+                </div>
+              </EntityField>
 
-                <Field label="Account" htmlFor="debt-account" error={errors.accountId}>
-                  <Select id="debt-account" name="accountId" defaultValue="">
-                    <option value="">Not specified</option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-              </div>
-            )}
+              <EntityField
+                name="remainingBalance"
+                label="Still owed"
+                htmlFor="debt-remaining"
+                hint="Leave blank if you have not paid any of it yet."
+              >
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {symbol}
+                  </span>
+                  <Input
+                    id="debt-remaining"
+                    name="remainingBalance"
+                    inputMode="decimal"
+                    placeholder="Same as borrowed"
+                    className="pl-9 tabular"
+                  />
+                </div>
+              </EntityField>
+
+              <EntityField name="apr" label="Interest rate" htmlFor="debt-apr">
+                <div className="relative">
+                  <Input
+                    id="debt-apr"
+                    name="apr"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    max={200}
+                    defaultValue="0"
+                    className="tabular pr-8"
+                  />
+                  <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    %
+                  </span>
+                </div>
+              </EntityField>
+
+              <EntityField name="minimumPayment" label="Monthly payment" htmlFor="debt-payment">
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {symbol}
+                  </span>
+                  <Input
+                    id="debt-payment"
+                    name="minimumPayment"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className="pl-9 tabular"
+                  />
+                </div>
+              </EntityField>
+
+              <EntityField name="startDate" label="Started" htmlFor="debt-start">
+                <Input id="debt-start" name="startDate" type="date" required defaultValue={today} />
+              </EntityField>
+
+              <EntityField name="accountId" label="Account" htmlFor="debt-account">
+                <Select id="debt-account" name="accountId" defaultValue="">
+                  <option value="">Not specified</option>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name}
+                    </option>
+                  ))}
+                </Select>
+              </EntityField>
+            </div>
           </EntityForm>
         </CardContent>
       </Card>

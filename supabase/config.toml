@@ -1,0 +1,66 @@
+# Smart Planner :: Supabase CLI configuration for the local stack.
+#
+# This file configures `supabase start` only. It does not touch a hosted
+# project — the equivalent settings there live under Authentication -> URL
+# Configuration, and have to be set by hand.
+
+project_id = "smart-planner"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+# Match the hosted default so local and production agree on things like
+# NULLS NOT DISTINCT, which migration 0007 depends on.
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+# Local mail capture. Magic links never leave the machine; read them at
+# http://127.0.0.1:54324. (Named [local_smtp] since CLI 2.x; [inbucket] still
+# parses but warns.)
+[local_smtp]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[auth]
+enabled = true
+
+# site_url and additional_redirect_urls must name the SAME host the app is
+# served from. Getting this wrong does not produce an error: Supabase quietly
+# ignores an unlisted emailRedirectTo and falls back to site_url, so the magic
+# link lands on a different origin, the PKCE code_verifier cookie is not sent
+# with it, and the user is bounced back to /login holding a ?code= that cannot
+# be exchanged. The CLI's default is 127.0.0.1:3000 while `next dev` prints
+# localhost:3000 — different origins for cookie purposes, so the default alone
+# breaks sign-in.
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000/auth/callback",
+  "http://127.0.0.1:3000/auth/callback",
+]
+
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+# Local only. A hosted project should require confirmation; here it would just
+# mean fishing a second link out of Mailpit on every test run.
+enable_confirmations = false
