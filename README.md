@@ -22,11 +22,22 @@ with warning indicators, the dashboard and its derived metrics, Excel and PDF
 export, installable-app support with offline quick add, receipt photos, CSV
 import, goals, debts and net worth.
 
-**It has never been run against a live database.** The schema, the row level
-security policies, the views and the Storage bucket are all written and
-type-checked, but no query in this repository has executed against a real
-Supabase project. Set one up (below) before trusting any figure it shows you,
-and expect to fix things the first time through.
+**Verified against a local Postgres, not yet against a hosted project.** The
+whole stack has been exercised on the Supabase CLI's local containers: all nine
+migrations apply to an empty database, signup seeds a new user, a second user
+reads none of the first user's rows through any table or view, both cron routes
+run, all twelve screens render, and an expense entered in quick add reaches the
+dashboard. That run found four real defects, all now fixed.
+
+What remains untested is a **hosted** project, and the difference is not
+cosmetic: the CLI connects as a superuser, so it cannot tell you whether your
+project's role is allowed to put a trigger on `auth.users` (migration `0004`) or
+policies on `storage.objects` (`0005`). Both carry a comment naming the error to
+expect and the manual fallback. Receipt uploads through Supabase Storage have
+not been exercised at all.
+
+Treat the first `db:push` against your own project as the real test, and expect
+to fix something.
 
 The default currency is **SGD** with `en-SG` formatting and the
 `Asia/Singapore` timezone. Change any of those under Settings.
@@ -76,6 +87,27 @@ npm run db:types      # regenerates src/types/database.ts from the live schema
 Or paste each file in `supabase/migrations/` into the dashboard SQL editor, in
 numerical order.
 
+Two migrations write to tables this project does not own. If `0004` fails with
+`must be owner of relation users`, or `0005` with `must be owner of relation
+objects`, create those objects from the dashboard instead — the trigger under
+**Database → Triggers**, the four receipt policies under **Storage → Policies**
+— using the expressions in the files. Everything else is ordinary `public`
+schema and will apply as written.
+
+### 4a. Run it locally against containers instead
+
+If you have Docker, you can have the whole stack — Postgres, Auth, Storage, a
+mail catcher — without a hosted project at all:
+
+```bash
+npx supabase start    # prints the local URL and keys for .env.local
+npx supabase db reset # re-applies every migration from scratch
+```
+
+Magic-link emails are captured at <http://127.0.0.1:54324> rather than sent.
+`supabase/config.toml` already lists both callback URLs; the sign-in failure it
+prevents is described in that file.
+
 ### 5. Enable sign-in
 
 In **Authentication → Providers**, email is on by default (used for magic
@@ -87,6 +119,13 @@ In **Authentication → URL Configuration**, add your redirect URLs:
 http://localhost:3000/auth/callback
 https://<your-vercel-domain>/auth/callback
 ```
+
+This step is load bearing, and it fails quietly. Supabase does not reject an
+unlisted redirect target — it substitutes the project's Site URL instead. The
+magic link then arrives pointing at a different origin, the PKCE `code_verifier`
+cookie is not sent with it, and you land back on `/login` with an unusable
+`?code=` in the address bar and no error anywhere. If sign-in bounces, this is
+why.
 
 ### 6. Run it
 
