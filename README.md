@@ -29,12 +29,20 @@ reads none of the first user's rows through any table or view, both cron routes
 run, all twelve screens render, and an expense entered in quick add reaches the
 dashboard. That run found four real defects, all now fixed.
 
+Every subsystem has since been driven end to end on that stack: the Excel
+workbook opens with a `Summary` sheet, one sheet per month and correct totals;
+the PDF is a valid multi-page document; a receipt photo uploads and lands in the
+Storage bucket under the uploader's own folder; and a bank CSV imports with the
+right date column chosen, quoted thousands separators parsed and the credit
+classified as income.
+
 What remains untested is a **hosted** project, and the difference is not
 cosmetic: the CLI connects as a superuser, so it cannot tell you whether your
 project's role is allowed to put a trigger on `auth.users` (migration `0004`) or
 policies on `storage.objects` (`0005`). Both carry a comment naming the error to
-expect and the manual fallback. Receipt uploads through Supabase Storage have
-not been exercised at all.
+expect and the manual fallback. Receipt upload works locally, but it is the
+feature that leans hardest on those Storage policies, so it is the one most
+worth retesting once your own project is up.
 
 Treat the first `db:push` against your own project as the real test, and expect
 to fix something.

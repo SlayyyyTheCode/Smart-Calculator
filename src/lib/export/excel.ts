@@ -6,7 +6,7 @@ import type { ExportPayload } from "@/lib/data/export";
 import { formatDateLabel, formatMonthLabel } from "@/lib/date";
 import { describeBudget } from "@/lib/domain/budget";
 import { fireCoverage, savingsRate } from "@/lib/domain/metrics";
-import { toMajorNumber } from "@/lib/money";
+import { toMajorNumber, type Minor } from "@/lib/money";
 import {
   aggregateCategories,
   computeMonth,
@@ -95,6 +95,12 @@ function buildSummarySheet(
 
   const firstDataRow = sheet.rowCount + 1;
 
+  // Running totals for the cached results on the SUM formulas below. Kept in
+  // minor units and converted once at the end: adding the major-unit figures
+  // would be floating point arithmetic on money, which this codebase does not
+  // do anywhere.
+  const columnTotals: Minor[] = [0, 0, 0, 0, 0, 0, 0, 0];
+
   for (const month of payload.months) {
     const computed = computeMonth(month);
 
@@ -109,16 +115,23 @@ function buildSummarySheet(
     const rate = savingsRate(computed.confirmedIncome, computed.confirmedExpense);
     const coverage = fireCoverage(month.totals.incomePassive, computed.confirmedExpense);
 
+    const minorFigures: Minor[] = [
+      month.totals.incomeActive,
+      month.totals.incomePassive,
+      computed.confirmedIncome,
+      byNature.daily,
+      byNature.fixed,
+      byNature.recurring,
+      computed.confirmedExpense,
+      computed.net,
+    ];
+    minorFigures.forEach((figure, index) => {
+      columnTotals[index] += figure;
+    });
+
     sheet.addRow([
       formatMonthLabel(month.periodMonth, payload.locale),
-      toMajorNumber(month.totals.incomeActive),
-      toMajorNumber(month.totals.incomePassive),
-      toMajorNumber(computed.confirmedIncome),
-      toMajorNumber(byNature.daily),
-      toMajorNumber(byNature.fixed),
-      toMajorNumber(byNature.recurring),
-      toMajorNumber(computed.confirmedExpense),
-      toMajorNumber(computed.net),
+      ...minorFigures.map(toMajorNumber),
       rate ?? "",
       coverage ?? "",
     ]);
@@ -127,11 +140,15 @@ function buildSummarySheet(
   const lastDataRow = sheet.rowCount;
 
   // A real SUM formula, not a precomputed constant, so the file behaves the way
-  // a spreadsheet is expected to when a row is edited.
+  // a spreadsheet is expected to when a row is edited — but carrying a cached
+  // result too. Excel and Sheets evaluate on open and would not need it;
+  // anything that reads the file without an evaluator (a script, a phone's
+  // preview pane) shows an empty totals row without it.
   const totalRow = sheet.addRow([
     "Total",
-    ...["B", "C", "D", "E", "F", "G", "H", "I"].map((column) => ({
+    ...["B", "C", "D", "E", "F", "G", "H", "I"].map((column, index) => ({
       formula: `SUM(${column}${firstDataRow}:${column}${lastDataRow})`,
+      result: toMajorNumber(columnTotals[index]),
     })),
     "",
     "",
