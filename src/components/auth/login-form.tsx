@@ -15,7 +15,7 @@ type Status = { kind: "idle" | "sending" | "sent" | "error"; message?: string };
  * Email magic link plus Google OAuth. No passwords to store, reset or leak.
  * Both paths land on /auth/callback, which exchanges the code for a session.
  */
-export function LoginForm() {
+export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
   const [email, setEmail] = useState("");
@@ -52,15 +52,23 @@ export function LoginForm() {
   return (
     <Card>
       <CardContent className="space-y-4 pt-5">
-        <Button variant="outline" className="w-full" onClick={signInWithGoogle}>
-          Continue with Google
-        </Button>
+        {/* Only offered when the project has Google configured. Rendering it
+            otherwise sends the browser to Supabase, which answers "provider is
+            not enabled" as raw JSON — past the point where this form could
+            catch it and say so. */}
+        {googleEnabled ? (
+          <>
+            <Button variant="outline" className="w-full" onClick={signInWithGoogle}>
+              Continue with Google
+            </Button>
 
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          or
-          <span className="h-px flex-1 bg-border" />
-        </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="h-px flex-1 bg-border" />
+              or
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        ) : null}
 
         <form onSubmit={sendMagicLink} className="space-y-3">
           <div className="space-y-1.5">

@@ -64,3 +64,25 @@ double_confirm_changes = true
 # Local only. A hosted project should require confirmation; here it would just
 # mean fishing a second link out of Mailpit on every test run.
 enable_confirmations = false
+
+# Google sign-in, off by default because it cannot work without credentials
+# only you can create. To turn it on locally:
+#
+#   1. Google Cloud console -> APIs & Services -> Credentials -> Create
+#      OAuth client ID -> Web application.
+#   2. Add this as an authorised redirect URI:
+#      http://127.0.0.1:54321/auth/v1/callback
+#   3. Put the client id and secret in .env.local as
+#      SUPABASE_AUTH_GOOGLE_CLIENT_ID and SUPABASE_AUTH_GOOGLE_SECRET.
+#   4. Set enabled = true below and run `npx supabase stop && npx supabase start`.
+#
+# On a hosted project none of this file applies — enable Google under
+# Authentication -> Providers and use that project's callback URL instead.
+#
+# The sign-in page asks Supabase which providers are live and only draws the
+# Google button when this is on, so leaving it false simply hides the button.
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"

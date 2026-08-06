@@ -4,11 +4,16 @@ import { Wallet } from "lucide-react";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { SetupNotice } from "@/components/auth/setup-notice";
+import { getEnabledProviders } from "@/lib/auth/providers";
 import { isSupabaseConfigured } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Sign in" };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const providers = isSupabaseConfigured
+    ? await getEnabledProviders()
+    : { google: false };
+
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm space-y-6">
@@ -25,7 +30,7 @@ export default function LoginPage() {
         {/* LoginForm reads the ?next= param, so it needs a Suspense boundary. */}
         {isSupabaseConfigured ? (
           <Suspense fallback={<div className="h-64 rounded-xl border border-border bg-surface" />}>
-            <LoginForm />
+            <LoginForm googleEnabled={providers.google} />
           </Suspense>
         ) : (
           <SetupNotice />
