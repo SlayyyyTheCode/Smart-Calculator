@@ -39,59 +39,102 @@ export const accountTypeSchema = z.enum(["cash", "bank", "credit", "brokerage", 
 export const assetTypeSchema = z.enum(["cash", "investment", "property", "other"]);
 
 /**
+ * Everything about a transaction except the amount, which differs by source:
+ * a form sends major units to be parsed, a queued entry sends minor units that
+ * were parsed on the device.
+ */
+const transactionFields = {
+  occurredOn: isoDate,
+  direction: directionSchema,
+  incomeType: incomeTypeSchema.nullish(),
+  expenseNature: expenseNatureSchema.nullish(),
+  categoryId: z.uuid().nullish(),
+  accountId: z.uuid().nullish(),
+  merchant: z.string().trim().max(120).nullish(),
+  note: z.string().trim().max(500).nullish(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
+};
+
+/**
  * A transaction is either an expense with a nature, or income with a type.
  * The same rule is enforced by a CHECK constraint in 0001_schema.sql; this
  * version exists to give the form a readable error instead of a database one.
  */
+function refineDirection(
+  value: { direction: "expense" | "income"; incomeType?: unknown; expenseNature?: unknown },
+  ctx: z.RefinementCtx,
+) {
+  if (value.direction === "expense") {
+    if (!value.expenseNature) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expenseNature"],
+        message: "Choose daily, fixed or recurring",
+      });
+    }
+    if (value.incomeType) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["incomeType"],
+        message: "Expenses do not have an income type",
+      });
+    }
+  } else {
+    if (!value.incomeType) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["incomeType"],
+        message: "Choose active or passive",
+      });
+    }
+    if (value.expenseNature) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["expenseNature"],
+        message: "Income does not have an expense nature",
+      });
+    }
+  }
+}
+
 export const transactionSchema = z
   .object({
-    occurredOn: isoDate,
+    ...transactionFields,
     amount: amountMinor,
-    direction: directionSchema,
-    incomeType: incomeTypeSchema.nullish(),
-    expenseNature: expenseNatureSchema.nullish(),
-    categoryId: z.uuid().nullish(),
-    accountId: z.uuid().nullish(),
-    merchant: z.string().trim().max(120).nullish(),
-    note: z.string().trim().max(500).nullish(),
-    tags: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
     clientUuid: z.uuid().optional(),
   })
-  .superRefine((value, ctx) => {
-    if (value.direction === "expense") {
-      if (!value.expenseNature) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["expenseNature"],
-          message: "Choose daily, fixed or recurring",
-        });
-      }
-      if (value.incomeType) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["incomeType"],
-          message: "Expenses do not have an income type",
-        });
-      }
-    } else {
-      if (!value.incomeType) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["incomeType"],
-          message: "Choose active or passive",
-        });
-      }
-      if (value.expenseNature) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["expenseNature"],
-          message: "Income does not have an expense nature",
-        });
-      }
-    }
-  });
+  .superRefine(refineDirection);
 
 export type TransactionInput = z.infer<typeof transactionSchema>;
+
+/**
+ * The wire shape of an entry recorded offline.
+ *
+ * Identical to `transactionSchema` except that `amount` is ALREADY integer
+ * minor units, because the device parsed it before queueing. Running such an
+ * entry back through `amountMinor` would parse it a second time — a queued
+ * $77.77 arrives as 7777, is read as "$7,777", and is stored as $7,777.00.
+ * That is a hundredfold error, reported to the device as a success, on a code
+ * path nobody is watching because it runs when the signal comes back.
+ *
+ * The queue is in the browser, so this is untrusted input: bounded to what
+ * numeric(14, 2) can hold rather than merely "a number".
+ */
+const MAX_MINOR = 99_999_999_999_999;
+
+export const queuedTransactionSchema = z
+  .object({
+    ...transactionFields,
+    amount: z
+      .number()
+      .int("Queued amounts are integer minor units")
+      .positive("Amount must be greater than zero")
+      .max(MAX_MINOR),
+    clientUuid: z.uuid(),
+  })
+  .superRefine(refineDirection);
+
+export type QueuedTransactionInput = z.infer<typeof queuedTransactionSchema>;
 
 export const recurringRuleSchema = z
   .object({

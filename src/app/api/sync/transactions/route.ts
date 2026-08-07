@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 
 import { toMajorString } from "@/lib/money";
-import { transactionSchema } from "@/lib/schemas";
+import { queuedTransactionSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -17,9 +17,15 @@ const MAX_BATCH = 200;
 /**
  * Accepts entries recorded while the device was offline.
  *
- * Every entry is validated here with the same schema the form uses. The queue
- * lives in the browser, so its contents are user-controllable and are treated
- * as untrusted input, not as something already checked on the way in.
+ * Every entry is validated here. The queue lives in the browser, so its
+ * contents are user-controllable and are treated as untrusted input, not as
+ * something already checked on the way in.
+ *
+ * Validation uses `queuedTransactionSchema`, not the form's
+ * `transactionSchema`. They differ in one field and it matters: a form sends
+ * an amount in major units to be parsed, while a queued entry was parsed on
+ * the device and arrives in minor units. Parsing it again multiplies it by a
+ * hundred.
  *
  * The reply names which entries were accepted and why any were rejected, so the
  * client can clear exactly those and keep the rest with a reason attached
@@ -63,7 +69,7 @@ export async function POST(request: NextRequest) {
       continue;
     }
 
-    const parsed = transactionSchema.safeParse(candidate);
+    const parsed = queuedTransactionSchema.safeParse(candidate);
     if (!parsed.success) {
       rejected[clientUuid] = parsed.error.issues[0]?.message ?? "Invalid entry.";
       continue;
