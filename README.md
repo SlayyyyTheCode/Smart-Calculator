@@ -36,6 +36,15 @@ Storage bucket under the uploader's own folder; and a bank CSV imports with the
 right date column chosen, quoted thousands separators parsed and the credit
 classified as income.
 
+Budgets warn at the threshold and turn red past the cap, on the budgets page and
+the dashboard both. A fixed rule posts itself as confirmed while a variable one
+posts a draft that stays out of the confirmed totals until you say what it
+really was. Goals, debts, assets, settings and transaction editing all save. At
+390px nothing hides behind the bottom tab bar. Against a production build the
+service worker registers, caches the shell but never an `/api/` or `/auth/`
+response, serves a deliberate offline screen, and an expense recorded with the
+connection cut arrives once, for the right amount, when it comes back.
+
 What remains untested is a **hosted** project, and the difference is not
 cosmetic: the CLI connects as a superuser, so it cannot tell you whether your
 project's role is allowed to put a trigger on `auth.users` (migration `0004`) or
