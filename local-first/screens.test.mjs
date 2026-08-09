@@ -97,12 +97,92 @@ const afterDraft = await page.locator("main").innerText();
 await page.screenshot({ path: `${OUT}/l2-6-after-draft.png`, fullPage: true });
 check("a recurring estimate does not move the totals", /\$115\.00/.test(afterDraft) && !/\$615\.00/.test(afterDraft), afterDraft.match(/\$[\d,.]+/g)?.slice(0, 3).join(" ") ?? "");
 
+// ---- the screens behind More -------------------------------------------
+const goTo = async (id) => {
+  await page.click('[data-testid="tab-more"]');
+  await page.waitForTimeout(300);
+  await page.click(`[data-testid="more-${id}"]`);
+  await page.waitForTimeout(700);
+};
+
+await goTo("transactions");
+const txList = await page.locator('[data-testid="transaction-list"]').innerText();
+await page.screenshot({ path: `${OUT}/l2-9-transactions.png`, fullPage: true });
+check("transactions lists what was recorded", /\$85\.00/.test(txList) && /\$30\.00/.test(txList), txList.replace(/\s+/g, " ").slice(0, 100));
+check("the draft is shown but marked", (await page.locator('[data-testid="draft-badge"]').count()) === 1);
+
+// Income, once there is some.
+await page.click('[data-testid="tab-add"]');
+await page.waitForTimeout(400);
+await page.locator('label:has-text("Income")').first().click();
+await page.fill("#amount", "5000.00");
+await page.click('[data-testid="record"]');
+await page.waitForTimeout(1200);
+await goTo("income");
+const incomeText = await page.locator("main").innerText();
+await page.screenshot({ path: `${OUT}/l2-10-income.png`, fullPage: true });
+check("income splits active from passive", /Active/.test(incomeText) && /Passive/.test(incomeText), incomeText.match(/\$[\d,.]+/g)?.slice(0, 3).join(" ") ?? "");
+
+// Goals — the monthly figure is the point of the screen.
+await goTo("goals");
+await page.fill("#goal-name", "Japan trip");
+await page.fill("#goal-target", "6000.00");
+await page.click('[data-testid="add-goal"]');
+await page.waitForTimeout(1200);
+const goalText = await page.locator('[data-testid="goal-monthly"]').innerText();
+await page.screenshot({ path: `${OUT}/l2-11-goals.png`, fullPage: true });
+check("a goal states what to set aside monthly", /Set aside \$[\d,.]+ a month/.test(goalText), goalText);
+
+// Debts — a payoff that works, and one that never does.
+await goTo("debts");
+await page.fill("#debt-name", "Car loan");
+await page.fill("#debt-balance", "15000.00");
+await page.fill("#debt-apr", "6.5");
+await page.fill("#debt-payment", "450.00");
+await page.click('[data-testid="add-debt"]');
+await page.waitForTimeout(1200);
+const payoff = await page.locator('[data-testid="payoff"]').first().innerText().catch(() => "");
+check("a debt projects a payoff date and interest", /Clear by \d{4}-\d{2}-\d{2}.*months.*interest/.test(payoff), payoff);
+
+await page.fill("#debt-name", "Bad card");
+await page.fill("#debt-balance", "10000.00");
+await page.fill("#debt-apr", "24");
+await page.fill("#debt-payment", "10.00");
+await page.click('[data-testid="add-debt"]');
+await page.waitForTimeout(1200);
+const underwater = await page.locator('[data-testid="underwater"]').first().innerText().catch(() => "");
+await page.screenshot({ path: `${OUT}/l2-12-debts.png`, fullPage: true });
+check("a payment below the interest is called out, not projected", /never clears it/.test(underwater) && /Pay at least/.test(underwater), underwater.replace(/\s+/g, " ").slice(0, 120));
+
+// Net worth nets the debts off.
+await goTo("net-worth");
+await page.fill("#asset-name", "Flat");
+await page.fill("#asset-value", "500000.00");
+await page.click('[data-testid="add-asset"]');
+await page.waitForTimeout(1200);
+const nw = await page.locator("main").innerText();
+await page.screenshot({ path: `${OUT}/l2-13-networth.png`, fullPage: true });
+check("net worth counts assets and subtracts debts", /Net worth/.test(nw) && /Liabilities/.test(nw), nw.match(/\$[\d,.]+/g)?.slice(0, 4).join(" ") ?? "");
+
+await page.click('[data-testid="tab-dashboard"]');
+await page.waitForTimeout(700);
+
 // Nothing may hide behind the fixed tab bar on a phone.
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 check("no horizontal overflow at 390px", overflow <= 1, `${overflow}px`);
 
+// It has to survive a restart. The network comes back for the reload itself —
+// L1/L2 have no service worker, so the HTML, JS and SQLite wasm still have to
+// be fetched — but no server holds the data, because this instance has no
+// transports. Whatever is on screen afterwards came off the disk.
+await context.setOffline(false);
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(2500);
+
 // Money must be integer minor units on disk, never a float. Read straight out
-// of the database rather than off the screen, which is formatted.
+// of the database rather than off the screen, which is formatted. This needs a
+// module fetch, so it happens here while the connection is up rather than
+// failing for a reason that has nothing to do with the data.
 const stored = await page.evaluate(async () => {
   const { evolu } = await import("/src/db.ts");
   const rows = await evolu.loadQuery(
@@ -112,17 +192,13 @@ const stored = await page.evaluate(async () => {
 });
 check(
   "amounts are stored as integer minor units",
-  stored.includes("8500:confirmed") && stored.includes("3000:confirmed") && stored.includes("50000:draft"),
+  stored.includes("8500:confirmed") &&
+    stored.includes("3000:confirmed") &&
+    stored.includes("50000:draft") &&
+    stored.includes("500000:confirmed"),
   stored.join(" "),
 );
 
-// It has to survive a restart. The network comes back for the reload itself —
-// L1/L2 have no service worker, so the HTML, JS and SQLite wasm still have to
-// be fetched — but no server holds the data, because this instance has no
-// transports. Whatever is on screen afterwards came off the disk.
-await context.setOffline(false);
-await page.reload({ waitUntil: "networkidle" });
-await page.waitForTimeout(2500);
 await context.setOffline(true);
 const reloaded = await page.locator("main").innerText();
 await page.screenshot({ path: `${OUT}/l2-8-after-reload.png`, fullPage: true });

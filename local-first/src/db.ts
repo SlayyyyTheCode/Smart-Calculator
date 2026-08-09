@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 
-import { createLocalDb, type AccountRow, type BudgetRow, type CategoryRow, type TransactionRow } from "./schema";
+import {
+  createLocalDb,
+  type AccountRow,
+  type AssetRow,
+  type BudgetRow,
+  type CategoryRow,
+  type DebtRow,
+  type GoalRow,
+  type TransactionRow,
+} from "./schema";
 
 const params = new URLSearchParams(location.search);
 const instance = params.get("instance") ?? "planner";
@@ -20,6 +29,15 @@ export const transactionsQuery = evolu.createQuery((db) =>
 export const budgetsQuery = evolu.createQuery((db) =>
   db.selectFrom("budget").selectAll().where("isDeleted", "is not", 1),
 );
+export const goalsQuery = evolu.createQuery((db) =>
+  db.selectFrom("goal").selectAll().where("isDeleted", "is not", 1).orderBy("targetDate"),
+);
+export const debtsQuery = evolu.createQuery((db) =>
+  db.selectFrom("debt").selectAll().where("isDeleted", "is not", 1).orderBy("name"),
+);
+export const assetsQuery = evolu.createQuery((db) =>
+  db.selectFrom("asset").selectAll().where("isDeleted", "is not", 1).orderBy("name"),
+);
 
 /**
  * Everything the screens read, in one subscription.
@@ -34,32 +52,41 @@ export function usePlannerData() {
   const [accounts, setAccounts] = useState<readonly AccountRow[]>([]);
   const [transactions, setTransactions] = useState<readonly TransactionRow[]>([]);
   const [budgets, setBudgets] = useState<readonly BudgetRow[]>([]);
+  const [goals, setGoals] = useState<readonly GoalRow[]>([]);
+  const [debts, setDebts] = useState<readonly DebtRow[]>([]);
+  const [assets, setAssets] = useState<readonly AssetRow[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const load = () => {
-      void Promise.all([
-        evolu.loadQuery(categoriesQuery),
-        evolu.loadQuery(accountsQuery),
-        evolu.loadQuery(transactionsQuery),
-        evolu.loadQuery(budgetsQuery),
-      ]).then(([c, a, t, b]) => {
-        setCategories(c as CategoryRow[]);
-        setAccounts(a as AccountRow[]);
-        setTransactions(t as TransactionRow[]);
-        setBudgets(b as BudgetRow[]);
-        setReady(true);
-      });
-    };
-    load();
-    const subs = [
-      evolu.subscribeQuery(categoriesQuery)(load),
-      evolu.subscribeQuery(accountsQuery)(load),
-      evolu.subscribeQuery(transactionsQuery)(load),
-      evolu.subscribeQuery(budgetsQuery)(load),
+    const queries = [
+      categoriesQuery,
+      accountsQuery,
+      transactionsQuery,
+      budgetsQuery,
+      goalsQuery,
+      debtsQuery,
+      assetsQuery,
     ];
+
+    const load = () => {
+      void Promise.all(queries.map((query) => evolu.loadQuery(query))).then(
+        ([c, a, t, b, g, d, s]) => {
+          setCategories(c as CategoryRow[]);
+          setAccounts(a as AccountRow[]);
+          setTransactions(t as TransactionRow[]);
+          setBudgets(b as BudgetRow[]);
+          setGoals(g as GoalRow[]);
+          setDebts(d as DebtRow[]);
+          setAssets(s as AssetRow[]);
+          setReady(true);
+        },
+      );
+    };
+
+    load();
+    const subs = queries.map((query) => evolu.subscribeQuery(query)(load));
     return () => subs.forEach((un) => un());
   }, []);
 
-  return { categories, accounts, transactions, budgets, ready };
+  return { categories, accounts, transactions, budgets, goals, debts, assets, ready };
 }

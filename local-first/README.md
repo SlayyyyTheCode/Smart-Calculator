@@ -90,12 +90,33 @@ fixed: the repository sorts, and the component now derives its maximum across
 every row, because a wrong emphasis is cosmetic and a bar hanging 500px off the
 side of the page is not.
 
+## The screens that exist
+
+Dashboard, quick add, budgets, transactions, income, goals, debts and net
+worth. Four tabs fit across a phone, so the rest live behind **More**.
+
+Each one reuses a shipped domain module rather than reimplementing it, and the
+test checks the arithmetic rather than that the page merely rendered:
+
+| Screen | Module | Checked |
+| --- | --- | --- |
+| Budgets | `evaluateBudget` | 85% amber, 115% red |
+| Dashboard | `largestExpense`, `savingsRate`, `runwayMonths` | ranked bars, 97.7% |
+| Income | `fireCoverage` | active and passive kept apart |
+| Goals | `goalProgress` | $600 a month for $6,000 by Jun 2027 |
+| Debts | `projectPayoff`, `summariseDebts` | clears 2029-09-09, $1,587.87 interest; 13.50% weighted rate |
+| Net worth | `computeNetWorth` | $506,885 assets − $25,000 debts = $481,885 |
+
+The debt screen also carries the case worth having: a payment below the monthly
+interest is called out — *"never clears it — interest alone is $200.00 a month.
+Pay at least $200.01"* — rather than projected out for a century, which would be
+technically true and useless.
+
 ## Not done yet
 
 L3 (opt-in encrypted sync), L4 (device pairing code and recovery phrase), L5
 (Capacitor shell and offline cold start), L6 (store submission).
 
-Screens still to convert: transactions, recurring, income, goals, debts, net
-worth, import and settings. The pattern is set by the three that exist — read
-from `usePlannerData`, shape in `repository.ts`, render with the shipped
-components — so the rest is repetition rather than design.
+Screens still to convert: recurring rules, CSV import and settings. Export to
+Excel and PDF is untouched here; those modules are pure and already tested, but
+they run on a server in the shipped app and would need to run on the device.

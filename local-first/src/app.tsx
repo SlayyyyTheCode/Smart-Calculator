@@ -1,28 +1,62 @@
 import { useState } from "react";
-import { LayoutGrid, Plus, Wallet } from "lucide-react";
+import {
+  ChevronRight,
+  Landmark,
+  LayoutGrid,
+  MoreHorizontal,
+  PiggyBank,
+  Plus,
+  Receipt,
+  Target,
+  Wallet,
+} from "lucide-react";
 
 import { Button } from "@app/components/ui/button";
+import { Card, CardContent } from "@app/components/ui/card";
+import { PageHeader } from "@app/components/ui/page-header";
 import { cn } from "@app/lib/utils";
 
 import { evolu, usePlannerData } from "./db";
 import { Budgets } from "./screens/budgets";
 import { Dashboard } from "./screens/dashboard";
+import { Income } from "./screens/income";
 import { QuickAdd } from "./screens/quick-add";
-import { NONE } from "./schema";
+import { Transactions } from "./screens/transactions";
+import { Debts, Goals, NetWorth } from "./screens/wealth";
 
 const PERIOD_MONTH = "2026-08-01";
 
-type Tab = "dashboard" | "add" | "budgets";
+type Screen =
+  | "dashboard"
+  | "add"
+  | "budgets"
+  | "more"
+  | "transactions"
+  | "income"
+  | "goals"
+  | "debts"
+  | "net-worth";
 
-const TABS: { id: Tab; label: string; icon: typeof LayoutGrid }[] = [
+/** Four fit across a phone. Everything else lives behind More. */
+const TABS: { id: Screen; label: string; icon: typeof LayoutGrid }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutGrid },
   { id: "add", label: "Add", icon: Plus },
   { id: "budgets", label: "Budgets", icon: Wallet },
+  { id: "more", label: "More", icon: MoreHorizontal },
+];
+
+const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }[] = [
+  { id: "transactions", label: "Transactions", hint: "Everything you have recorded", icon: Receipt },
+  { id: "income", label: "Income", hint: "Active and passive, kept apart", icon: Wallet },
+  { id: "goals", label: "Goals", hint: "What you are saving for", icon: Target },
+  { id: "debts", label: "Debts", hint: "What you owe and when it clears", icon: Landmark },
+  { id: "net-worth", label: "Net worth", hint: "Everything owned less everything owed", icon: PiggyBank },
 ];
 
 export function App() {
-  const [tab, setTab] = useState<Tab>("dashboard");
-  const { categories, accounts, transactions, budgets, ready } = usePlannerData();
+  const [screen, setScreen] = useState<Screen>("dashboard");
+  const { categories, accounts, transactions, budgets, goals, debts, assets, ready } =
+    usePlannerData();
 
   /**
    * What a freshly installed app gives you, with nothing to sign up for.
@@ -53,6 +87,7 @@ export function App() {
   };
 
   const needsSeed = ready && categories.length === 0;
+  const activeTab: Screen = TABS.some((tab) => tab.id === screen) ? screen : "more";
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
@@ -78,32 +113,82 @@ export function App() {
           </div>
         ) : null}
 
-        {tab === "dashboard" ? (
+        {screen === "dashboard" ? (
           <Dashboard
             transactions={transactions}
             categories={categories}
             accounts={accounts}
             budgets={budgets}
             periodMonth={PERIOD_MONTH}
-            onRecord={() => setTab("add")}
+            onRecord={() => setScreen("add")}
           />
         ) : null}
 
-        {tab === "add" ? (
+        {screen === "add" ? (
           <QuickAdd
             categories={categories}
             accounts={accounts}
-            onSaved={() => setTab("dashboard")}
+            onSaved={() => setScreen("dashboard")}
           />
         ) : null}
 
-        {tab === "budgets" ? (
+        {screen === "budgets" ? (
           <Budgets
             budgets={budgets}
             transactions={transactions}
             categories={categories}
             periodMonth={PERIOD_MONTH}
           />
+        ) : null}
+
+        {screen === "transactions" ? (
+          <Transactions transactions={transactions} categories={categories} />
+        ) : null}
+
+        {screen === "income" ? (
+          <Income transactions={transactions} periodMonth={PERIOD_MONTH} />
+        ) : null}
+
+        {screen === "goals" ? <Goals goals={goals} /> : null}
+
+        {screen === "debts" ? <Debts debts={debts} /> : null}
+
+        {screen === "net-worth" ? (
+          <NetWorth
+            accounts={accounts}
+            transactions={transactions}
+            assets={assets}
+            debts={debts}
+          />
+        ) : null}
+
+        {screen === "more" ? (
+          <>
+            <PageHeader title="More" description="The rest of the planner." />
+            <Card>
+              <CardContent className="pt-2">
+                <ul className="divide-y divide-border">
+                  {MORE.map(({ id, label, hint, icon: Icon }) => (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        onClick={() => setScreen(id)}
+                        data-testid={`more-${id}`}
+                        className="flex w-full items-center gap-3 py-3 text-left"
+                      >
+                        <Icon className="size-4 text-muted-foreground" aria-hidden />
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-medium">{label}</span>
+                          <span className="block text-xs text-muted-foreground">{hint}</span>
+                        </span>
+                        <ChevronRight className="size-4 text-muted-foreground" aria-hidden />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          </>
         ) : null}
       </main>
 
@@ -112,12 +197,12 @@ export function App() {
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setTab(id)}
+              onClick={() => setScreen(id)}
               data-testid={`tab-${id}`}
-              aria-current={tab === id ? "page" : undefined}
+              aria-current={activeTab === id ? "page" : undefined}
               className={cn(
                 "flex flex-1 flex-col items-center gap-0.5 py-2 text-xs",
-                tab === id ? "text-accent" : "text-muted-foreground",
+                activeTab === id ? "text-accent" : "text-muted-foreground",
               )}
             >
               <Icon className="size-5" aria-hidden />
@@ -129,5 +214,3 @@ export function App() {
     </div>
   );
 }
-
-export { NONE };
