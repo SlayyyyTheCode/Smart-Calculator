@@ -112,10 +112,57 @@ interest is called out — *"never clears it — interest alone is $200.00 a mon
 Pay at least $200.01"* — rather than projected out for a century, which would be
 technically true and useless.
 
+## Sync (L3)
+
+Off by default. With it off the app is complete and nothing has ever left the
+device. Turning it on adopts the owner this device already has, adds a relay
+transport, and starts exchanging encrypted copies.
+
+Pairing a second device is done with the 24-word recovery phrase: reveal it on
+the first device, enter it on the second. `node sync.test.mjs` drives exactly
+that against a relay of our own, and then reads the relay's database:
+
+- sync is off on a fresh device and says so
+- the phrase stays hidden until asked for — a phrase on screen is a key on
+  screen
+- an invalid phrase is refused with a readable message, at the point of entry
+  rather than at the next startup with a broken database
+- device B receives device A's `$42.42`, and a `$13.13` recorded on B comes back
+  to A
+- the relay ends up holding **one** owner and no readable content: searching its
+  file for `42.42`, `13.13`, `Groceries`, `Food & Dining`, `transaction`,
+  `amountMinor`, `occurredOn`, `expense`, `daily` and `confirmed` finds none of
+  them
+
+### Two things this got wrong first, worth keeping written down
+
+**Turning on sync must adopt the owner the device already has.** Minting a fresh
+one looks equivalent and is not: everything recorded so far belongs to the owner
+Evolu created when the database was first opened. A new owner syncs an empty
+account and strands the real history under a key nothing points at — the user
+turns on sync and watches their records disappear.
+
+**Pairing a used device needs an explicit intent, not a comparison.** Handing a
+different `externalAppOwner` to a database that already exists does not re-key
+it; the rows stay under the owner they were written with and the relay quietly
+accumulates two owners that never converge. `restoreAppOwner` is the operation
+for it, and it is destructive, so it must run only when the user actually asked
+to replace this device's data. Deciding that by comparing mnemonics cannot work,
+because both cases look identical once the config is written. The config records
+what the user chose instead.
+
+### What is not built
+
+The **six-digit code** flow — device A shows a short code, a broker authorises
+device B, and the key crosses without anyone typing 24 words — needs a pairing
+service to sit between them. It is the better experience and it is a real piece
+of work, not a refinement of this. What exists today is the phrase, which is the
+same security with worse ergonomics.
+
 ## Not done yet
 
-L3 (opt-in encrypted sync), L4 (device pairing code and recovery phrase), L5
-(Capacitor shell and offline cold start), L6 (store submission).
+L4's six-digit pairing code (see above), L5 (Capacitor shell and offline cold
+start), L6 (store submission).
 
 Screens still to convert: recurring rules, CSV import and settings. Export to
 Excel and PDF is untouched here; those modules are pure and already tested, but

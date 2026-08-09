@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 
+import { Mnemonic } from "@evolu/common";
+
+import { readSyncConfig, writeSyncConfig } from "./sync-config";
 import {
   createLocalDb,
   type AccountRow,
@@ -14,8 +17,41 @@ import {
 const params = new URLSearchParams(location.search);
 const instance = params.get("instance") ?? "planner";
 
-/** No mnemonic and no relay: local-only, which is what a fresh install is. */
-export const { evolu } = createLocalDb({ instanceName: `local-${instance}` });
+/**
+ * Sync is opt-in, so a fresh install has no mnemonic and no relay: the database
+ * is local-only and complete. Once the user turns sync on, the stored config
+ * supplies the owner and the transport, and the app reloads to open the
+ * database under that owner.
+ */
+export const syncConfig = readSyncConfig();
+
+export const { evolu, owner } = createLocalDb({
+  instanceName: `local-${instance}`,
+  mnemonic: syncConfig?.mnemonic,
+  relayUrl: syncConfig?.relayUrl,
+});
+
+/**
+ * Adopting somebody else's owner on a device that already has one.
+ *
+ * A database is created with an owner the first time it is opened, and handing
+ * a different `externalAppOwner` to an existing database does not re-key it —
+ * the rows stay under the owner they were written with, and the new owner's
+ * data never arrives. That is the difference between pairing a fresh device and
+ * pairing one that has been used, and only the second case needs this.
+ *
+ * `restoreAppOwner` is the operation for it: it resets the local database and
+ * pulls down everything belonging to the restored owner. It is destructive to
+ * whatever was on this device, which is why the screen that triggers it says
+ * so. Comparing mnemonics first keeps it to the one case that needs it, so
+ * turning sync on with your own existing owner never wipes anything.
+ */
+if (syncConfig && !syncConfig.adopted) {
+  // Marked adopted first. restoreAppOwner reloads the page, and an unmarked
+  // config would restore again on the way back up, forever.
+  writeSyncConfig({ ...syncConfig, adopted: true });
+  void evolu.restoreAppOwner(Mnemonic.orThrow(syncConfig.mnemonic), { reload: true });
+}
 
 export const categoriesQuery = evolu.createQuery((db) =>
   db.selectFrom("category").selectAll().where("isDeleted", "is not", 1).orderBy("sortOrder"),

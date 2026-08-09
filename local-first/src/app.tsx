@@ -6,6 +6,7 @@ import {
   MoreHorizontal,
   PiggyBank,
   Plus,
+  RefreshCw,
   Receipt,
   Target,
   Wallet,
@@ -16,12 +17,13 @@ import { Card, CardContent } from "@app/components/ui/card";
 import { PageHeader } from "@app/components/ui/page-header";
 import { cn } from "@app/lib/utils";
 
-import { evolu, usePlannerData } from "./db";
+import { evolu, syncConfig, usePlannerData } from "./db";
 import { Budgets } from "./screens/budgets";
 import { Dashboard } from "./screens/dashboard";
 import { Income } from "./screens/income";
 import { QuickAdd } from "./screens/quick-add";
 import { Transactions } from "./screens/transactions";
+import { Sync } from "./screens/sync";
 import { Debts, Goals, NetWorth } from "./screens/wealth";
 
 const PERIOD_MONTH = "2026-08-01";
@@ -35,7 +37,8 @@ type Screen =
   | "income"
   | "goals"
   | "debts"
-  | "net-worth";
+  | "net-worth"
+  | "sync";
 
 /** Four fit across a phone. Everything else lives behind More. */
 const TABS: { id: Screen; label: string; icon: typeof LayoutGrid }[] = [
@@ -51,6 +54,12 @@ const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }
   { id: "goals", label: "Goals", hint: "What you are saving for", icon: Target },
   { id: "debts", label: "Debts", hint: "What you owe and when it clears", icon: Landmark },
   { id: "net-worth", label: "Net worth", hint: "Everything owned less everything owed", icon: PiggyBank },
+  {
+    id: "sync",
+    label: "Sync",
+    hint: syncConfig ? "On — your devices share this data" : "Off — this device only",
+    icon: RefreshCw,
+  },
 ];
 
 export function App() {
@@ -95,7 +104,7 @@ export function App() {
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <span className="text-sm font-semibold">Smart Planner</span>
           <span className="text-xs text-muted-foreground" data-testid="mode">
-            On this device · no account
+            {syncConfig ? "Synced · end-to-end encrypted" : "On this device · no account"}
           </span>
         </div>
       </header>
@@ -161,6 +170,8 @@ export function App() {
             debts={debts}
           />
         ) : null}
+
+        {screen === "sync" ? <Sync config={syncConfig} /> : null}
 
         {screen === "more" ? (
           <>
