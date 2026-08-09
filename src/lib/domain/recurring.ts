@@ -25,7 +25,7 @@ import {
   toIsoDate,
   type IsoDate,
 } from "@/lib/date";
-import type { RecurrenceFrequency } from "@/types/database";
+import type { RecurrenceFrequency } from "@/lib/domain/enums";
 
 export type RecurrenceSpec = {
   frequency: RecurrenceFrequency;

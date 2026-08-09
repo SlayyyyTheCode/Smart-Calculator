@@ -26,7 +26,7 @@ import type {
   RecurrenceFrequency,
   TransactionDirection,
   TransactionStatus,
-} from "@/types/database";
+} from "@/lib/domain/enums";
 
 export type MaterializableRule = {
   id: string;

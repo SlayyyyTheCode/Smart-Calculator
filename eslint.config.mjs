@@ -17,6 +17,10 @@ const eslintConfig = defineConfig([
     // failures in code nobody here wrote.
     "supabase/.temp/**",
     "supabase/.branches/**",
+    // Spike workspaces are separate projects with their own toolchains; they
+    // are linted, built and run on their own terms, not by the app's config.
+    "spikes/**",
+    "local-first/**",
   ]),
   {
     rules: {

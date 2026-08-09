@@ -8,15 +8,31 @@
  *   npm run db:types
  */
 
-export type TransactionDirection = "expense" | "income";
-export type IncomeType = "active" | "passive";
-export type ExpenseNature = "daily" | "fixed" | "recurring";
-export type CategoryKind = "expense" | "income";
-export type AccountType = "cash" | "bank" | "credit" | "brokerage" | "other";
-export type RecurrenceFrequency = "weekly" | "monthly" | "quarterly" | "yearly";
-export type TransactionStatus = "confirmed" | "draft";
-export type AssetType = "cash" | "investment" | "property" | "other";
-export type ImportStatus = "pending" | "committed" | "reverted";
+// The domain owns this vocabulary; this file only mirrors it, so the two
+// spellings cannot drift and the rules stay free of any storage engine.
+export type {
+  AccountType,
+  AssetType,
+  CategoryKind,
+  ExpenseNature,
+  ImportStatus,
+  IncomeType,
+  RecurrenceFrequency,
+  TransactionDirection,
+  TransactionStatus,
+} from "@/lib/domain/enums";
+
+import type {
+  AccountType,
+  AssetType,
+  CategoryKind,
+  ExpenseNature,
+  ImportStatus,
+  IncomeType,
+  RecurrenceFrequency,
+  TransactionDirection,
+  TransactionStatus,
+} from "@/lib/domain/enums";
 
 /** Columns every table sets itself; never supplied on insert. */
 type Timestamps = {

@@ -48,3 +48,5 @@ supabase/.branches/
 # Spike workspaces have their own dependencies
 spikes/*/node_modules/
 spikes/*/dist/
+local-first/node_modules/
+local-first/dist/
