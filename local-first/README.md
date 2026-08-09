@@ -6,7 +6,7 @@ nothing to sign up for**. This is L1 of the local-first plan.
 ```bash
 npm install
 npm run dev                 # http://localhost:5174
-node offline.test.mjs       # needs playwright-core from the parent project
+node screens.test.mjs       # needs playwright-core from the parent project
 ```
 
 ## The point
@@ -29,19 +29,31 @@ your money did.
 That reuse is possible because the domain layer imports nothing but itself,
 `money` and `date` — no Supabase, no Next, no `server-only`.
 
+## The screens
+
+L2 replaced the L1 scratch UI with real screens — dashboard, quick add, budgets
+— built from the **shipped design system**, not a second copy of it:
+`StatTile`, `Meter`, `CategoryBars`, `Card`, `Field`, `Segmented`,
+`ProgressBar`, `BUDGET_LEVEL_STYLES`. `src/styles.css` imports the app's own
+`globals.css`, so the tokens, the validated chart colours and dark mode all come
+across as they are.
+
 ## What the test proves
 
-`offline.test.mjs` cuts the network at the start and does everything after that
-with no server of any kind reachable:
+`screens.test.mjs` cuts the network immediately after first load and does
+everything after that with no server of any kind reachable, on a 390px phone
+viewport:
 
-- seeds categories and an account
-- 85 spent against a 100 cap is a **warning** at 85.00%
-- 115 against the same cap is **exceeded** at 115.00%
-- a draft estimate is stored but moves **no** total, exactly as the Postgres
-  version behaves
-- income, savings rate, runway and largest expense all compute
-- amounts stay integer minor units: 8500, 3000, 500000 — never a float
-- the data survives a reload
+- the shipped stylesheet is actually applied — a reused component with no CSS
+  looks right in the source and broken on screen
+- 85 spent against a 100 cap renders **Close to limit**; 115 renders
+  **Exceeded**, on the budgets screen and again on the dashboard
+- a recurring estimate is stored as a draft and moves **no** total
+- amounts are read back out of SQLite as integer minor units — `8500`, `3000`,
+  `50000` — never a float
+- nothing overflows horizontally at 390px
+- the data and the budget state survive a restart
+- dark mode applies
 
 ## Two honest caveats
 
@@ -71,8 +83,19 @@ for the same reason amounts are minor units.
 There is no `user_id` column anywhere. There are no other users on the device.
 The owner key is the boundary that row level security used to be.
 
+`CategoryBars` ranks by taking the first row as the maximum, which is correct
+only if the caller sorted. This repository did not, and a later, larger row
+computed a width above 100% — an 895px bar inside a 390px phone. Both ends are
+fixed: the repository sorts, and the component now derives its maximum across
+every row, because a wrong emphasis is cosmetic and a bar hanging 500px off the
+side of the page is not.
+
 ## Not done yet
 
-L2 (converting the real screens), L3 (opt-in encrypted sync), L4 (device pairing
-code and recovery phrase), L5 (Capacitor shell and offline cold start), L6
-(store submission).
+L3 (opt-in encrypted sync), L4 (device pairing code and recovery phrase), L5
+(Capacitor shell and offline cold start), L6 (store submission).
+
+Screens still to convert: transactions, recurring, income, goals, debts, net
+worth, import and settings. The pattern is set by the three that exist — read
+from `usePlannerData`, shape in `repository.ts`, render with the shipped
+components — so the rest is repetition rather than design.

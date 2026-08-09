@@ -3,6 +3,10 @@ import { formatMoney, formatPercent } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type CategoryBarsProps = {
+  /**
+   * Ranked biggest first. The order is what decides which bar carries the
+   * accent, so an unsorted list emphasises the wrong category.
+   */
   categories: CategoryTotal[];
   currency: string;
   locale: string;
@@ -38,7 +42,12 @@ export function CategoryBars({ categories, currency, locale, limit = 8 }: Catego
         ]
       : head;
 
-  const max = rows[0]?.amount ?? 1;
+  // Taken across every row rather than from the first. With a ranked list the
+  // two are the same number; with an unranked one, reading the first row as the
+  // maximum makes a later, larger row compute a width above 100% and blow the
+  // bar out past the edge of the page. A wrong emphasis is a cosmetic mistake,
+  // a nine-hundred-pixel div inside a phone is a broken layout.
+  const max = Math.max(...rows.map((row) => row.amount), 1);
 
   return (
     <div>

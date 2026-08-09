@@ -75,11 +75,17 @@ export function categoryTotals(
     byCategory.set(key, (byCategory.get(key) ?? 0) + num(row.amountMinor));
   }
 
-  return [...byCategory].map(([categoryId, amount]) => ({
-    categoryId: categoryId === NONE ? null : categoryId,
-    categoryName: categoryId === NONE ? "Uncategorised" : (nameById.get(categoryId) ?? "Unknown"),
-    amount,
-  }));
+  return (
+    [...byCategory]
+      .map(([categoryId, amount]) => ({
+        categoryId: categoryId === NONE ? null : categoryId,
+        categoryName: categoryId === NONE ? "Uncategorised" : (nameById.get(categoryId) ?? "Unknown"),
+        amount,
+      }))
+      // Ranked biggest first, which is what "where did the money go" means and
+      // what CategoryBars needs in order to emphasise the right row.
+      .sort((a, b) => b.amount - a.amount)
+  );
 }
 
 export type LocalBudgetStatus = BudgetEvaluation & {

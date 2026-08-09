@@ -1,0 +1,16 @@
+/*
+ * The shipped app's stylesheet, imported rather than copied — the same tokens,
+ * the same validated chart colours, the same dark mode. A second copy would
+ * drift, and the first thing to drift is always a colour that then means
+ * something slightly different on the phone than on the web.
+ */
+@import "../../src/app/globals.css";
+
+/*
+ * Tailwind v4 scans the files it can reach from the project root, and the
+ * components live outside it. Without this, every class on a reused component
+ * is a class Tailwind never saw and never generated, and the screen renders
+ * unstyled while looking, in the source, entirely correct.
+ */
+@source "../../src/components";
+@source "../src";
