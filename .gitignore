@@ -44,3 +44,7 @@ next-env.d.ts
 # Supabase CLI local state
 supabase/.temp/
 supabase/.branches/
+
+# Spike workspaces have their own dependencies
+spikes/*/node_modules/
+spikes/*/dist/
