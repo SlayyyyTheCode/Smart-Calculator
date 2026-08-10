@@ -9,7 +9,7 @@ import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu } from "../db";
 import { accountBalances } from "../repository";
-import type { AccountRow, CategoryRow, TransactionRow } from "../schema";
+import type { AccountRow, CategoryRow, TransactionRow } from "../db";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";
@@ -152,7 +152,7 @@ export function Settings({
                 <button
                   type="button"
                   aria-label={`Delete ${String(account.name)}`}
-                  onClick={() => evolu.update("account", { id: account.id, isDeleted: true })}
+                  onClick={() => evolu.update("account", { id: account.id, isDeleted: 1 })}
                   className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-muted hover:text-rose-600"
                 >
                   <Trash2 className="size-4" aria-hidden />

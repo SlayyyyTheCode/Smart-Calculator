@@ -12,7 +12,7 @@ import { formatMoney } from "@app/lib/money";
 import { cn } from "@app/lib/utils";
 
 import { budgetStatuses, categoryTotals, monthMetrics } from "../repository";
-import type { AccountRow, BudgetRow, CategoryRow, TransactionRow } from "../schema";
+import type { AccountRow, BudgetRow, CategoryRow, TransactionRow } from "../db";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";

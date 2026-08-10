@@ -6,11 +6,19 @@ nothing to sign up for**. This is L1 of the local-first plan.
 ```bash
 npm install
 npm run dev            # http://localhost:5174
-npm run test           # screens + two-device sync (needs the relay, below)
+npm run typecheck
+npm run test           # every suite (needs the services, below)
 npm run build
 npm run preview        # http://localhost:5175
 npm run test:cold      # offline cold start, against the production build
 ```
+
+`npm run typecheck` exists because for a long time nothing checked this
+workspace: the root config excludes it and Vite transpiles without checking. The
+first run found that every row type was `never` — `InferRow` takes a Query, and
+it had been handed a table definition — and that two delete buttons were sending
+a boolean where Evolu wants `0 | 1`. The types were decorative and one of them
+was hiding a button that did nothing.
 
 Tests use `playwright-core` from the parent project. The sync and pairing tests
 need the two services:

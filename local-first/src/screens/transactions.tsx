@@ -8,8 +8,8 @@ import { formatMoney } from "@app/lib/money";
 import { cn } from "@app/lib/utils";
 import { Receipt } from "lucide-react";
 
-import { evolu } from "../db";
-import { NONE, type CategoryRow, type TransactionRow } from "../schema";
+import { evolu, type CategoryRow, type TransactionRow } from "../db";
+import { NONE } from "../schema";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";
@@ -92,7 +92,7 @@ export function Transactions({
                     type="button"
                     aria-label="Delete"
                     data-testid="delete"
-                    onClick={() => evolu.update("transaction", { id: row.id, isDeleted: true })}
+                    onClick={() => evolu.update("transaction", { id: row.id, isDeleted: 1 })}
                     className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-muted hover:text-rose-600"
                   >
                     <Trash2 className="size-4" aria-hidden />

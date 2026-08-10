@@ -124,6 +124,27 @@ await page.waitForTimeout(1200);
 const accountList = await page.locator('[data-testid="account-list"]').innerText();
 check("an account can be added and shows a balance", /Savings/.test(accountList) && /\$1,000\.00/.test(accountList), accountList.replace(/\s+/g, " ").slice(0, 110));
 
+// Deleting. Never covered until the type checker showed the flag was being
+// sent as a boolean where Evolu wants 0 or 1 — a delete button that may never
+// have deleted anything.
+await goTo("transactions");
+const beforeDelete = await page.locator('[data-testid="transaction-list"] > li').count();
+await page.locator('[data-testid="delete"]').first().click();
+await page.waitForTimeout(1200);
+const afterDelete = await page.locator('[data-testid="transaction-list"] > li').count();
+await page.screenshot({ path: `${OUT}/l2c-6-after-delete.png`, fullPage: true });
+check("deleting a transaction removes it", afterDelete === beforeDelete - 1, `${beforeDelete} -> ${afterDelete}`);
+
+// Online only long enough to fetch the page itself — there is no service worker
+// in dev, and nothing but this device holds the data anyway.
+await context.setOffline(false);
+await page.reload({ waitUntil: "networkidle" });
+await page.waitForTimeout(2500);
+await context.setOffline(true);
+await goTo("transactions");
+const afterReload = await page.locator('[data-testid="transaction-list"] > li').count();
+check("and it stays deleted after a restart", afterReload === afterDelete, `${afterDelete} -> ${afterReload}`);
+
 const real = errors.filter((e) => !/favicon|React DevTools|Failed to load resource/i.test(e));
 check("no page errors", real.length === 0, real.slice(0, 3).join(" | "));
 

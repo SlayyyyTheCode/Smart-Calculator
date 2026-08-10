@@ -10,7 +10,7 @@ import { formatDateLabel } from "@app/lib/date";
 import { formatMoney } from "@app/lib/money";
 
 import { confirmedTotals } from "../repository";
-import type { TransactionRow } from "../schema";
+import type { TransactionRow } from "../db";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";

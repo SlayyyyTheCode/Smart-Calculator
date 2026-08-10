@@ -1,19 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { Mnemonic } from "@evolu/common";
+import { Mnemonic, type InferRow } from "@evolu/common";
 
 import { readSyncConfig, writeSyncConfig } from "./sync-config";
-import {
-  createLocalDb,
-  type AccountRow,
-  type AssetRow,
-  type BudgetRow,
-  type CategoryRow,
-  type DebtRow,
-  type GoalRow,
-  type RecurringRuleRow,
-  type TransactionRow,
-} from "./schema";
+import { createLocalDb } from "./schema";
 
 const params = new URLSearchParams(location.search);
 const instance = params.get("instance") ?? "planner";
@@ -26,7 +16,7 @@ const instance = params.get("instance") ?? "planner";
  */
 export const syncConfig = readSyncConfig();
 
-export const { evolu, owner } = createLocalDb({
+export const { evolu } = createLocalDb({
   instanceName: `local-${instance}`,
   mnemonic: syncConfig?.mnemonic,
   relayUrl: syncConfig?.relayUrl,
@@ -80,6 +70,22 @@ export const rulesQuery = evolu.createQuery((db) =>
 );
 
 /**
+ * The row types, inferred from the queries above.
+ *
+ * `InferRow` takes a Query. Handed a table definition instead it resolves to
+ * `never` without complaint, which is what these types were until the workspace
+ * was type-checked for the first time.
+ */
+export type CategoryRow = InferRow<typeof categoriesQuery>;
+export type AccountRow = InferRow<typeof accountsQuery>;
+export type TransactionRow = InferRow<typeof transactionsQuery>;
+export type BudgetRow = InferRow<typeof budgetsQuery>;
+export type GoalRow = InferRow<typeof goalsQuery>;
+export type DebtRow = InferRow<typeof debtsQuery>;
+export type AssetRow = InferRow<typeof assetsQuery>;
+export type RecurringRuleRow = InferRow<typeof rulesQuery>;
+
+/**
  * Everything the screens read, in one subscription.
  *
  * Reloading all four on any change is deliberate at this size: the whole
@@ -99,35 +105,43 @@ export function usePlannerData() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const queries = [
-      categoriesQuery,
-      accountsQuery,
-      transactionsQuery,
-      budgetsQuery,
-      goalsQuery,
-      debtsQuery,
-      assetsQuery,
-      rulesQuery,
-    ];
-
+    // Loaded one at a time rather than by mapping over an array of queries:
+    // the array's element type is a union of eight different Query types, and
+    // Promise.all over it loses which row shape belongs to which setter.
     const load = () => {
-      void Promise.all(queries.map((query) => evolu.loadQuery(query))).then(
-        ([c, a, t, b, g, d, s, r]) => {
-          setCategories(c as CategoryRow[]);
-          setAccounts(a as AccountRow[]);
-          setTransactions(t as TransactionRow[]);
-          setBudgets(b as BudgetRow[]);
-          setGoals(g as GoalRow[]);
-          setDebts(d as DebtRow[]);
-          setAssets(s as AssetRow[]);
-          setRules(r as RecurringRuleRow[]);
-          setReady(true);
-        },
-      );
+      void Promise.all([
+        evolu.loadQuery(categoriesQuery),
+        evolu.loadQuery(accountsQuery),
+        evolu.loadQuery(transactionsQuery),
+        evolu.loadQuery(budgetsQuery),
+        evolu.loadQuery(goalsQuery),
+        evolu.loadQuery(debtsQuery),
+        evolu.loadQuery(assetsQuery),
+        evolu.loadQuery(rulesQuery),
+      ]).then(([c, a, t, b, g, d, s, r]) => {
+        setCategories(c);
+        setAccounts(a);
+        setTransactions(t);
+        setBudgets(b);
+        setGoals(g);
+        setDebts(d);
+        setAssets(s);
+        setRules(r);
+        setReady(true);
+      });
     };
 
     load();
-    const subs = queries.map((query) => evolu.subscribeQuery(query)(load));
+    const subs = [
+      evolu.subscribeQuery(categoriesQuery)(load),
+      evolu.subscribeQuery(accountsQuery)(load),
+      evolu.subscribeQuery(transactionsQuery)(load),
+      evolu.subscribeQuery(budgetsQuery)(load),
+      evolu.subscribeQuery(goalsQuery)(load),
+      evolu.subscribeQuery(debtsQuery)(load),
+      evolu.subscribeQuery(assetsQuery)(load),
+      evolu.subscribeQuery(rulesQuery)(load),
+    ];
     return () => subs.forEach((un) => un());
   }, []);
 

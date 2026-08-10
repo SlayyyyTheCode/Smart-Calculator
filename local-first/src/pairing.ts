@@ -22,8 +22,22 @@ const ECDH = { name: "ECDH", namedCurve: "P-256" } as const;
 const b64 = (bytes: ArrayBuffer): string =>
   btoa(String.fromCharCode(...new Uint8Array(bytes)));
 
-const unb64 = (text: string): Uint8Array =>
-  Uint8Array.from(atob(text), (character) => character.charCodeAt(0));
+/**
+ * Backed by a real ArrayBuffer, explicitly.
+ *
+ * `Uint8Array.from` yields `Uint8Array<ArrayBufferLike>`, and ArrayBufferLike
+ * includes SharedArrayBuffer, which WebCrypto will not accept as a BufferSource.
+ * Allocating the buffer first is what makes the type honest rather than casting
+ * the complaint away.
+ */
+const unb64 = (text: string): Uint8Array<ArrayBuffer> => {
+  const binary = atob(text);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return bytes;
+};
 
 export type EphemeralKeys = {
   publicKey: string;

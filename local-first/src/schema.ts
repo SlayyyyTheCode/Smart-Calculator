@@ -9,7 +9,6 @@ import {
   NonEmptyString100,
   NonEmptyString1000,
   SimpleName,
-  type InferRow,
 } from "@evolu/common";
 import { evoluReactWebDeps } from "@evolu/react-web";
 
@@ -140,14 +139,16 @@ export const Schema = {
   },
 };
 
-export type CategoryRow = InferRow<typeof Schema.category>;
-export type AccountRow = InferRow<typeof Schema.account>;
-export type TransactionRow = InferRow<typeof Schema.transaction>;
-export type BudgetRow = InferRow<typeof Schema.budget>;
-export type RecurringRuleRow = InferRow<typeof Schema.recurringRule>;
-export type GoalRow = InferRow<typeof Schema.goal>;
-export type DebtRow = InferRow<typeof Schema.debt>;
-export type AssetRow = InferRow<typeof Schema.asset>;
+
+/**
+ * Row types are NOT declared here.
+ *
+ * `InferRow` infers from a Query, not from a table definition, so
+ * `InferRow<typeof Schema.transaction>` silently resolved to `never` — every
+ * row type in the app was `never`, and nothing complained because the screens
+ * coerce with String() and Number() anyway. They are derived from the queries
+ * in db.ts instead, which is where a Query actually exists.
+ */
 
 /**
  * Creates the local database.

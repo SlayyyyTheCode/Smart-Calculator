@@ -1,0 +1,26 @@
+{
+  // The root config excludes this workspace, so until now nothing type-checked
+  // it: Vite transpiles without checking, which means a type error here was
+  // invisible until it became a runtime one.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client"],
+    "paths": {
+      "@app/*": ["../src/*"],
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

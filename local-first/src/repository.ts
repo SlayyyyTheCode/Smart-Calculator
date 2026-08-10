@@ -10,7 +10,8 @@ import {
 } from "@app/lib/domain/metrics";
 import type { Minor } from "@app/lib/money";
 
-import { NONE, type AccountRow, type BudgetRow, type CategoryRow, type TransactionRow } from "./schema";
+import { NONE } from "./schema";
+import { type AccountRow, type BudgetRow, type CategoryRow, type TransactionRow } from "./db";
 
 /**
  * The bridge between rows on the device and the rules.

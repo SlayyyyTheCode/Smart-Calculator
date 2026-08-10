@@ -11,8 +11,8 @@ import { planMaterialization, type MaterializableRule } from "@app/lib/domain/ma
 import { describeRecurrence } from "@app/lib/domain/recurring";
 import { formatMoney, parseAmount } from "@app/lib/money";
 
-import { evolu } from "../db";
-import { NONE, type AccountRow, type RecurringRuleRow } from "../schema";
+import { evolu, type AccountRow, type RecurringRuleRow } from "../db";
+import { NONE } from "../schema";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";

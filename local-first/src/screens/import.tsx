@@ -14,8 +14,8 @@ import {
 } from "@app/lib/import/csv";
 import { formatMoney } from "@app/lib/money";
 
-import { evolu } from "../db";
-import { NONE, type AccountRow } from "../schema";
+import { evolu, type AccountRow } from "../db";
+import { NONE } from "../schema";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";

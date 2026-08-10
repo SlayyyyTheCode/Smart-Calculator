@@ -9,9 +9,9 @@ import { BUDGET_LEVEL_STYLES, byUrgency } from "@app/lib/domain/budget";
 import { formatMoney, parseAmount, toMajorString } from "@app/lib/money";
 import { cn } from "@app/lib/utils";
 
-import { evolu } from "../db";
+import { evolu, type AccountRow, type BudgetRow, type CategoryRow, type TransactionRow } from "../db";
 import { budgetStatuses } from "../repository";
-import { NONE, type AccountRow, type BudgetRow, type CategoryRow, type TransactionRow } from "../schema";
+import { NONE } from "../schema";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";

@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node screens.test.mjs && node sync.test.mjs",
-    "test:cold": "node cold-start.test.mjs"
+    "test": "node screens.test.mjs && node remaining.test.mjs && node idempotency.test.mjs && node sync.test.mjs && node pairing.test.mjs",
+    "test:cold": "node cold-start.test.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "keywords": [],
   "author": "",

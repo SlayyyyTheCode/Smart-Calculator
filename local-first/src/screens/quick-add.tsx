@@ -7,8 +7,8 @@ import { PageHeader } from "@app/components/ui/page-header";
 import type { ExpenseNature, TransactionDirection } from "@app/lib/domain/enums";
 import { parseAmount } from "@app/lib/money";
 
-import { evolu } from "../db";
-import { NONE, type AccountRow, type CategoryRow } from "../schema";
+import { evolu, type AccountRow, type CategoryRow } from "../db";
+import { NONE } from "../schema";
 
 const TODAY = "2026-08-09";
 
