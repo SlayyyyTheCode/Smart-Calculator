@@ -11,6 +11,8 @@
  * only ever sees an owner id and ciphertext.
  */
 
+import { Mnemonic } from "@evolu/common";
+
 const KEY = "smart-planner.sync";
 
 export type SyncConfig = {
@@ -38,6 +40,21 @@ export function readSyncConfig(): SyncConfig | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<SyncConfig>;
     if (typeof parsed.mnemonic !== "string" || typeof parsed.relayUrl !== "string") return null;
+
+    /**
+     * The mnemonic is parsed here or it is parsed at startup, and startup is the
+     * wrong place: it happens at module scope, so a value that will not parse
+     * throws before anything renders — and the value is in localStorage, so the
+     * next load throws in the same place. A blank screen with no way back.
+     *
+     * Validating on the way out turns that into "sync is off", which is a state
+     * the app is built to be complete in. The data is on the device either way.
+     */
+    if (!Mnemonic.from(parsed.mnemonic).ok) {
+      clearSyncConfig();
+      return null;
+    }
+
     return {
       mnemonic: parsed.mnemonic,
       relayUrl: parsed.relayUrl,

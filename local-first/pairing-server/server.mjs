@@ -59,7 +59,34 @@ const MAX_FAILURES = 20;
 
 const now = () => Date.now();
 
+/**
+ * How many proxies sit in front of this. Zero means none: trust the socket.
+ *
+ * This has to be configured rather than sniffed. Behind a reverse proxy every
+ * caller shares the proxy's address, so one attacker exhausts the limit for
+ * everybody and the limit becomes an outage — but trusting X-Forwarded-For
+ * without knowing the topology is worse, because then a caller sets its own
+ * address and the limit becomes nothing at all.
+ *
+ * Hops are counted from the right. The rightmost entry was appended by your own
+ * proxy and is the only one it observed; everything further left was supplied by
+ * whoever was talking to it and can be invented freely. Taking the leftmost —
+ * the usual mistake — is what makes the header spoofable.
+ */
+const TRUSTED_HOPS = Number(process.env.TRUSTED_PROXY_HOPS ?? 0);
+
 function callerOf(req) {
+  if (TRUSTED_HOPS > 0) {
+    const chain = String(req.headers["x-forwarded-for"] ?? "")
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    const caller = chain[chain.length - TRUSTED_HOPS];
+    // A missing or short chain means the request did not come through the proxy
+    // it was supposed to. Falling back to the socket is the safe reading: it is
+    // never spoofable, only sometimes too blunt.
+    if (caller) return caller;
+  }
   return req.socket.remoteAddress ?? "unknown";
 }
 

@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { KeyRound, ShieldCheck } from "lucide-react";
 
+import { Mnemonic } from "@evolu/common";
+
 import { Button } from "@app/components/ui/button";
 import { Field, Input } from "@app/components/ui/field";
 
@@ -104,11 +106,17 @@ export function PairingCode({ mnemonic }: { mnemonic: string }) {
 
 /**
  * The receiving half: this device has no data and enters the code.
+ *
+ * What arrives is held, not adopted. Adopting it immediately and showing the
+ * confirmation word on the way out asks the user to check something that has
+ * already happened — and in practice they never saw it at all, because adopting
+ * reloads the page and React does not paint before a reload. The one control
+ * that makes a six-digit code safe existed on one screen only.
  */
 export function PairingEntry({ onReceived }: { onReceived: (mnemonic: string) => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
-  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const [received, setReceived] = useState<{ mnemonic: string; confirmation: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const submit = async (event: React.FormEvent) => {
@@ -130,8 +138,14 @@ export function PairingEntry({ onReceived }: { onReceived: (mnemonic: string) =>
             keys.privateKey,
             collected.sealed,
           );
-          setConfirmation(word);
-          onReceived(plaintext);
+          // Checked here, where it can still be refused. Stored unvalidated it
+          // would be parsed at startup instead, which throws before anything
+          // renders and throws again on every load after that.
+          if (!Mnemonic.from(plaintext.trim().replace(/\s+/g, " ")).ok) {
+            setError("What arrived is not a recovery phrase. Start again on the other device.");
+            return;
+          }
+          setReceived({ mnemonic: plaintext.trim().replace(/\s+/g, " "), confirmation: word });
           return;
         }
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -143,6 +157,25 @@ export function PairingEntry({ onReceived }: { onReceived: (mnemonic: string) =>
       setBusy(false);
     }
   };
+
+  if (received) {
+    return (
+      <div className="space-y-3">
+        <ConfirmationWord value={received.confirmation} />
+        <p className="text-sm text-muted-foreground">
+          Adopting this replaces anything already on this device with the other one&apos;s data.
+        </p>
+        <div className="flex gap-2">
+          <Button onClick={() => onReceived(received.mnemonic)} data-testid="confirm-pairing">
+            The codes match — continue
+          </Button>
+          <Button variant="outline" onClick={() => setReceived(null)} data-testid="cancel-pairing">
+            They differ — stop
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={(event) => void submit(event)} className="space-y-3">
@@ -161,7 +194,6 @@ export function PairingEntry({ onReceived }: { onReceived: (mnemonic: string) =>
       <Button type="submit" disabled={busy || code.length !== 6} data-testid="submit-pairing-code">
         {busy ? "Pairing…" : "Pair this device"}
       </Button>
-      {confirmation ? <ConfirmationWord value={confirmation} /> : null}
     </form>
   );
 }

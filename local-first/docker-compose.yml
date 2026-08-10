@@ -34,6 +34,13 @@ services:
       - "4100:4100"
     environment:
       PORT: "4100"
+      # Guessing is bounded per caller, and behind a reverse proxy every caller
+      # arrives from the proxy's address — one attacker would lock out everyone.
+      # Set this to the number of proxies in front of the broker once you put one
+      # there, and it reads the forwarded address instead. Leave it at 0 while
+      # nothing is in front, because trusting the header with no proxy to write
+      # it lets any caller name itself and removes the limit entirely.
+      TRUSTED_PROXY_HOPS: "0"
     # No volume on purpose. Sessions live two minutes and belong in memory.
 
 volumes:

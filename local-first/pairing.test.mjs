@@ -102,7 +102,28 @@ await goToSync(b.page);
 await b.page.fill('[data-testid="pairing-input"]', code);
 await b.page.click('[data-testid="submit-pairing-code"]');
 
-// A's poller now seals the phrase; B collects and reloads into the shared owner.
+// The confirmation word is the only thing standing between a six-digit code and
+// a substituted key, and it is worth nothing unless the user can actually read
+// it on BOTH screens. The receiving device used to adopt the phrase and reload
+// in the same breath, so its word was set into state that never painted — the
+// check existed on one screen and could never be performed.
+const bWord = await b.page
+  .locator('[data-testid="confirmation"]')
+  .innerText({ timeout: 60000 })
+  .catch(() => "");
+await b.page.screenshot({ path: `${OUT}/l4-2-device-b-confirm.png`, fullPage: true });
+check("the receiving device shows its confirmation before adopting anything", /^[0-9A-F]{8}$/.test(bWord), bWord);
+
+await a.page.waitForTimeout(1500);
+const aWord = await a.page.locator('[data-testid="confirmation"]').innerText().catch(() => "");
+await a.page.screenshot({ path: `${OUT}/l4-3-confirmation.png`, fullPage: true });
+check("the sending device shows a confirmation to compare", /^[0-9A-F]{8}$/.test(aWord), aWord);
+check("the two devices derive the same word", aWord.length === 8 && aWord === bWord, `${aWord} vs ${bWord}`);
+
+// Nothing is adopted until the person says the words match. Adopting first and
+// showing the word afterwards asks the user to check something already done.
+await b.page.click('[data-testid="confirm-pairing"]');
+
 let arrived = false;
 for (let i = 0; i < 60; i += 1) {
   const text = await b.page.locator("main").innerText().catch(() => "");
@@ -114,12 +135,6 @@ for (let i = 0; i < 60; i += 1) {
 }
 await b.page.screenshot({ path: `${OUT}/l4-2-device-b.png`, fullPage: true });
 check("the second device receives the data via the code", arrived, (await b.page.locator("main").innerText()).replace(/\s+/g, " ").slice(0, 90));
-
-// Both sides must show the same confirmation.
-await a.page.waitForTimeout(1500);
-const aWord = await a.page.locator('[data-testid="confirmation"]').innerText().catch(() => "");
-await a.page.screenshot({ path: `${OUT}/l4-3-confirmation.png`, fullPage: true });
-check("the sending device shows a confirmation to compare", /^[0-9A-F]{8}$/.test(aWord), aWord);
 
 // The claim the whole design rests on: the broker relayed the phrase without
 // ever being able to read it. Device A's own recovery phrase is fetched from
@@ -146,6 +161,39 @@ const real = [...a.errors, ...b.errors].filter(
   (e) => !/favicon|React DevTools|Failed to load resource/i.test(e),
 );
 check("no page errors", real.length === 0, real.slice(0, 3).join(" | "));
+
+// ---- a phrase that is not a phrase --------------------------------------
+// The typed-phrase form validates before it stores. The pairing path did not,
+// and what it stores is whatever the other side sealed. A bad value there is
+// not a failed pairing: the mnemonic is parsed at module scope, so it throws
+// before anything renders, and the bad value is in localStorage, so it throws
+// again on every load afterwards. Unrecoverable from inside the app.
+{
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await page.goto(`${APP}/?instance=brick${Date.now()}`, { waitUntil: "networkidle" });
+  await page.evaluate(() => {
+    localStorage.setItem(
+      "smart-planner.sync",
+      JSON.stringify({ mnemonic: "not actually a recovery phrase", relayUrl: "ws://localhost:4000", adopted: false }),
+    );
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(4000);
+  const visible = await page.locator("main").innerText().catch(() => "");
+  await page.screenshot({ path: `${OUT}/l4-4-bad-phrase.png`, fullPage: true });
+  check(
+    "a stored phrase that will not parse does not brick the app",
+    visible.trim().length > 0,
+    visible.replace(/\s+/g, " ").slice(0, 80) || "nothing rendered at all",
+  );
+
+  // And having survived it, the device must be usable — not stuck in a loop
+  // retrying the same broken config.
+  const recovered = await page.evaluate(() => localStorage.getItem("smart-planner.sync"));
+  check("and the unusable config is cleared rather than retried forever", recovered === null, String(recovered));
+  await context.close();
+}
 
 // ---- guessing, last, because it burns this caller's allowance -----------
 {

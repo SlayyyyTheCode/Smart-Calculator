@@ -132,6 +132,55 @@ const post = (path, body) =>
 }
 
 server.kill();
+
+// ---- behind a proxy ----------------------------------------------------
+// With every caller arriving from the proxy's address, one bucket is shared by
+// everybody: one attacker locks the door for every real user. The fix is to
+// read the forwarded address — but only as far back as the operator says is
+// trustworthy, because the rest of that header is written by whoever is calling.
+{
+  const proxied = spawn(process.execPath, [serverPath], {
+    env: { ...process.env, PORT: "4178", TRUSTED_PROXY_HOPS: "1" },
+    stdio: "ignore",
+  });
+  const AT = "http://127.0.0.1:4178";
+  for (let i = 0; i < 50; i += 1) {
+    try {
+      await fetch(`${AT}/nope`);
+      break;
+    } catch {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
+  const guess = (forwarded, code) =>
+    fetch(`${AT}/session?code=${code}`, { headers: { "x-forwarded-for": forwarded } });
+
+  // One client burns its own allowance.
+  let blocked = 0;
+  for (let i = 0; i < 40; i += 1) {
+    const r = await guess("203.0.113.9", String(600000 + i));
+    if (r.status === 429) blocked += 1;
+  }
+  check("a client behind the proxy is limited by its own address", blocked > 0, `${blocked} of 40 refused`);
+
+  // A different client on the same proxy is unaffected — which is the entire
+  // reason for reading the header rather than the socket.
+  const neighbour = await guess("203.0.113.10", "700000");
+  check("and its neighbour is not punished for it", neighbour.status === 404, String(neighbour.status));
+
+  // The spoof: the blocked client prepends an innocent address. Counting from
+  // the right means the entry its proxy appended is still what is read.
+  const spoof = await guess("198.51.100.1, 203.0.113.9", "700001");
+  check(
+    "prepending a made-up address does not escape the limit",
+    spoof.status === 429,
+    `${spoof.status} — hops are counted from the right for exactly this`,
+  );
+
+  proxied.kill();
+}
+
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
 process.exit(failed.length ? 1 : 0);

@@ -295,12 +295,59 @@ counter only ever saw *correct* codes — somebody walking through all million
 possibilities would have met nothing but `404`s and no resistance at all. Six
 digits is not much to guess.
 
-Counting failures per caller is what actually bounds it. Behind a proxy that
-needs the forwarded address, and behind a shared NAT it is blunt — but a blunt
-limit that fires beats a precise one that cannot.
+Counting failures per caller is what actually bounds it. Behind a shared NAT
+that is blunt — but a blunt limit that fires beats a precise one that cannot.
+
+Then it was in the wrong place a second time. The counter went on the *claim*
+route, because that is the route that pairs a device. Three other routes take
+the same six-digit code, and all three answered the question an attacker
+actually asks — does this code exist? — for free. So: enumerate on the poll
+route at no cost until one answers `200`, then spend your single allowed claim
+on a code you already know is live. Measured before the fix, **320 of 400
+guesses landed**; after, none. Every route that takes a code now goes through
+one lookup that counts the miss, which is the same "one implementation per
+rule" the money math gets, applied to a limit.
+
+Only failures count, and that is what keeps it off the real flow: the sender
+polls its own valid code the whole time it waits, and the receiver polls for
+its own sealed payload. `broker.test.mjs` pins that down *first* — forty polls
+on each route, unthrottled — because a limit that breaks pairing would be a
+worse bug than the one being fixed.
+
+Behind a reverse proxy every caller arrives from the proxy's address and one
+attacker would lock out everybody, so set `TRUSTED_PROXY_HOPS` to the number of
+proxies in front of the broker. Hops are counted from the **right**: the
+rightmost entry is the one your own proxy appended and the only one it
+observed, while everything to its left was supplied by whoever was calling and
+can be invented. Taking the leftmost is the usual mistake and it is what makes
+the header spoofable — there is a test that prepends a made-up address and
+still gets refused.
 
 The code is still not the security boundary. Two minutes, one claim, and the
 confirmation word are.
+
+### And the confirmation word could not be read
+
+The receiving device derived it, set it into state, and adopted the phrase in
+the same breath — which reloads the page. React does not paint before a reload,
+so that screen never appeared. The one control that makes a six-digit code
+worth trusting existed on the sending device only, and the test had only ever
+looked there.
+
+Now what arrives is held rather than adopted: the receiver shows its word and
+waits for **the codes match — continue**. Asking after adopting is asking about
+something already done. The test compares the two words across both devices and
+requires them equal, which is the check the design always claimed and never
+made.
+
+While it was open: the phrase from a pairing was stored without being parsed,
+unlike the typed-phrase form, which validates. That is not a failed pairing —
+the mnemonic is parsed at module scope, so a bad value throws before anything
+renders, and it is in `localStorage`, so it throws again on every load
+afterwards. A blank screen with no way back from inside the app. It is now
+validated on arrival, and `readSyncConfig` refuses an unusable one and clears
+it, which turns the worst case into "sync is off" — a state this app is built
+to be complete in.
 
 ## Not done yet
 
@@ -312,8 +359,10 @@ and store listings, and Apple requires in-app purchase for paid digital goods
 
 **A hosted relay and broker.** Both run on localhost here. The relay holds only
 ciphertext and the broker only relays it, so neither is sensitive to host — but
-they do have to be somewhere both devices can reach, over TLS.
+they do have to be somewhere both devices can reach, over TLS. Set
+`TRUSTED_PROXY_HOPS` on the broker when you put a proxy in front of it, or the
+guessing limit collapses onto a single shared bucket.
 
-Screens still to convert: recurring rules, CSV import and settings. Export to
-Excel and PDF is untouched here; those modules are pure and already tested, but
-they run on a server in the shipped app and would need to run on the device.
+Export to Excel and PDF is untouched here. Those modules are pure and already
+tested, but they run on a server in the shipped app and would need to run on
+the device.
