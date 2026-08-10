@@ -185,18 +185,59 @@ to replace this device's data. Deciding that by comparing mnemonics cannot work,
 because both cases look identical once the config is written. The config records
 what the user chose instead.
 
-### What is not built
+## Pairing with a code (L4)
 
-The **six-digit code** flow — device A shows a short code, a broker authorises
-device B, and the key crosses without anyone typing 24 words — needs a pairing
-service to sit between them. It is the better experience and it is a real piece
-of work, not a refinement of this. What exists today is the phrase, which is the
-same security with worse ergonomics.
+Typing 24 words is the fallback, not the path. Device A shows a six-digit code;
+device B enters it and the phrase crosses encrypted.
+
+```bash
+node pairing-server/server.mjs     # http://127.0.0.1:4100
+node pairing.test.mjs
+```
+
+The broker relays two messages and is built to be useless to whoever runs it.
+Device B makes an ephemeral P-256 key pair and publishes only the public half;
+device A agrees a shared secret by ECDH and encrypts the phrase under it with
+AES-GCM. The private half never leaves device B and the agreed key is never
+transmitted, so a broker keeping every byte it ever saw still cannot open the
+result.
+
+`pairing.test.mjs` records every request the sending device makes to the broker
+and then searches all of it for that device's own recovery phrase — the whole
+phrase, and each of its 24 words individually. None of it is there.
+
+Both devices also derive a confirmation from the key they agreed, never from
+anything the broker sent, and show it. A substituted public key produces two
+different words on two screens; matching words mean nothing got in between.
+
+### The rate limit was in the wrong place
+
+The obvious design puts an attempt counter on the pairing session, and it does
+nothing. A guessed code that does not exist never reaches a session, so the
+counter only ever saw *correct* codes — somebody walking through all million
+possibilities would have met nothing but `404`s and no resistance at all. Six
+digits is not much to guess.
+
+Counting failures per caller is what actually bounds it. Behind a proxy that
+needs the forwarded address, and behind a shared NAT it is blunt — but a blunt
+limit that fires beats a precise one that cannot.
+
+The code is still not the security boundary. Two minutes, one claim, and the
+confirmation word are.
 
 ## Not done yet
 
-L4's six-digit pairing code (see above), the native projects themselves, and L6
-(store submission, and Apple requires in-app purchase for paid digital goods).
+**The native projects.** `npx cap add android` / `ios` needs Android Studio or
+Xcode. This machine has neither an Android SDK nor a Java runtime, so those
+projects are not scaffolded here rather than committed unbuilt and unrun.
+
+**Store submission.** Needs your own developer accounts, signing certificates
+and store listings, and Apple requires in-app purchase for paid digital goods
+(15–30%). None of it is something this repository can do on your behalf.
+
+**A hosted relay and broker.** Both run on localhost here. The relay holds only
+ciphertext and the broker only relays it, so neither is sensitive to host — but
+they do have to be somewhere both devices can reach.
 
 Screens still to convert: recurring rules, CSV import and settings. Export to
 Excel and PDF is untouched here; those modules are pure and already tested, but

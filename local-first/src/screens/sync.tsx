@@ -9,6 +9,7 @@ import { Field, Input } from "@app/components/ui/field";
 import { PageHeader } from "@app/components/ui/page-header";
 
 import { evolu } from "../db";
+import { PairingCode, PairingEntry } from "./pairing";
 import {
   clearSyncConfig,
   DEFAULT_RELAY,
@@ -107,7 +108,25 @@ export function Sync({ config }: { config: SyncConfig | null }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Already have a recovery phrase?</CardTitle>
+            <CardTitle>Pair with your other device</CardTitle>
+            <CardDescription>
+              Show a code on the device that already has your data, and enter it here. The phrase
+              is encrypted to this device on the way across; the service in between only relays it.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PairingEntry
+              onReceived={(received) => {
+                writeSyncConfig({ mnemonic: received, relayUrl: DEFAULT_RELAY, adopted: false });
+                location.reload();
+              }}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Or type the recovery phrase</CardTitle>
             <CardDescription>
               Enter the phrase from your other device to pick up its data here.
             </CardDescription>
@@ -151,6 +170,14 @@ export function Sync({ config }: { config: SyncConfig | null }) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <PairingCode mnemonic={config.mnemonic} />
+
+          <div className="flex items-center gap-3 pt-1 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            or type the phrase
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
           {revealed ? (
             <>
               <p
