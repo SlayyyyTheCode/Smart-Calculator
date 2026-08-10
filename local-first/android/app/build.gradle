@@ -1,5 +1,21 @@
 apply plugin: 'com.android.application'
 
+// Release signing details, kept out of the repository.
+//
+// keystore.properties and the .jks itself are gitignored. The upload key is
+// yours and only yours: Play ties the listing to it, so a key in version
+// control is a key that can be stolen, and a key that is lost cannot be
+// replaced without abandoning the listing.
+//
+// Absent, the release build simply goes unsigned rather than failing, so
+// `assembleDebug` still works on a machine that has never seen the key.
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+def hasReleaseKey = keystorePropertiesFile.exists()
+if (hasReleaseKey) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.smartplanner.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,8 +32,29 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseKey) {
+            release {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                // Play requires v2 at minimum; v1 is long obsolete and only
+                // enlarges the archive.
+                enableV1Signing false
+                enableV2Signing true
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseKey) {
+                signingConfig signingConfigs.release
+            }
+            // Left off deliberately. The app is a WebView shell around a bundle
+            // that Vite has already minified; shrinking the thin Java layer
+            // saves almost nothing and buys stack traces nobody can read.
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

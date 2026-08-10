@@ -131,6 +131,34 @@ Capacitor's default `http` scheme the WebView is not a secure context, and
 without a secure context there is no OPFS. The app would launch, find no
 storage, and quietly hold everything in memory until the process was killed.
 
+### A release build for Play
+
+Play wants an `.aab` signed with a key you own. Generate it once and keep it:
+
+```bash
+cd android
+keytool -genkeypair -v -keystore upload-keystore.jks -alias upload \
+  -keyalg RSA -keysize 4096 -validity 10000 -storetype PKCS12
+cp keystore.properties.example keystore.properties   # then fill in the passwords
+./gradlew bundleRelease
+```
+
+Out comes `app/build/outputs/bundle/release/app-release.aab`, about 3.7 MB.
+
+Both `keystore.properties` and `*.jks` are gitignored, and were gitignored
+before either existed. **Google Play binds your listing to this key.** Lose it
+and you cannot publish updates to your own app ever again — not a support
+problem, a dead end. Back the `.jks` up somewhere that is not this laptop.
+
+Without the key the release build does not fail; it simply produces an unsigned
+artefact, so `assembleDebug` still works on a machine that has never seen it.
+
+This pipeline was proved with a throwaway key, which was then deleted: the AAB
+came out structurally correct (`BUNDLE-METADATA`, `base/dex`, the web assets and
+the SQLite wasm inside) and the matching release APK verified under
+`apksigner` with v2 signing. Nothing signed with that key is in the repository,
+and the key itself is gone.
+
 ### iOS
 
 Not built. `npx cap add ios` needs Xcode and therefore a Mac.
@@ -269,10 +297,6 @@ confirmation word are.
 ## Not done yet
 
 **iOS.** Needs Xcode, and therefore a Mac.
-
-**A release build.** The APK here is debug-signed, which is fine for sideloading
-and not accepted by Play. A release build needs an upload key you generate and
-keep — losing it means losing the ability to update the listing.
 
 **Store submission.** Needs your own developer accounts, signing certificates
 and store listings, and Apple requires in-app purchase for paid digital goods
