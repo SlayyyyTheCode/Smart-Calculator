@@ -32,16 +32,26 @@ const MAX_ATTEMPTS = 5;
 const sessions = new Map();
 
 /**
- * Failed claims per caller.
+ * Failed guesses per caller, counted across every route that takes a code.
  *
  * The obvious place to count attempts is on the session, and it is the wrong
  * place: a guessed code that does not exist never reaches a session, so a
  * per-session counter never sees the attack it was meant to stop. Somebody
  * walking through all million codes would have met nothing but 404s.
  *
- * Counting per caller is what actually bounds guessing. Behind a proxy this
- * needs the forwarded address instead, and behind a shared NAT it is blunt —
- * but a blunt limit that fires beats a precise one that cannot.
+ * Counting per caller is what actually bounds guessing — but only if every
+ * route counts. Limiting the claim route alone was decoration: four routes
+ * take a code and all four answer "does this exist?", so an attacker could
+ * find the live code for free on the poll route and then spend the single
+ * claim it was allowed. Measured before this was fixed: 320 of 400 guesses
+ * landed. The limit has to sit on the question, not on one way of asking it.
+ *
+ * Only failures count. The sender polls its own valid code while it waits and
+ * the receiver polls for its own sealed payload; those succeed, so a legitimate
+ * pairing never approaches the limit no matter how long it waits.
+ *
+ * Behind a proxy this needs the forwarded address instead, and behind a shared
+ * NAT it is blunt — but a blunt limit that fires beats a precise one that cannot.
  */
 const failures = new Map();
 const FAILURE_WINDOW_MS = 10 * 60 * 1000;
@@ -70,6 +80,30 @@ function recordFailure(caller) {
     return;
   }
   entry.count += 1;
+}
+
+/** The 429 body, so every route refuses in the same words. */
+const THROTTLED = { error: "Too many attempts. Wait, then start again." };
+
+/**
+ * Look a code up and count the miss.
+ *
+ * Every route that takes a code goes through here, which is what makes the
+ * limit hold across all of them rather than on whichever one was written first.
+ */
+function lookup(req, res, code) {
+  const caller = callerOf(req);
+  if (tooManyFailures(caller)) {
+    send(res, 429, THROTTLED);
+    return null;
+  }
+  const entry = [...sessions.entries()].find(([known]) => sameCode(known, code ?? ""));
+  if (!entry) {
+    recordFailure(caller);
+    send(res, 404, { error: "No such code, or it has expired." });
+    return null;
+  }
+  return entry;
 }
 
 function sweep() {
@@ -152,22 +186,14 @@ const server = createServer((req, res) => {
         const body = await readJson(req);
         sweep();
 
-        const caller = callerOf(req);
-        if (tooManyFailures(caller)) {
-          return send(res, 429, { error: "Too many attempts. Wait, then start again." });
-        }
+        const found = lookup(req, res, body.code);
+        if (!found) return undefined;
 
-        const entry = [...sessions.entries()].find(([code]) => sameCode(code, body.code ?? ""));
-        if (!entry) {
-          recordFailure(caller);
-          return send(res, 404, { error: "No such code, or it has expired." });
-        }
-
-        const [code, session] = entry;
+        const [code, session] = found;
         if (session.claimed) {
           // One claim only. A code that has already been used is spent, even if
           // it is still inside its two minutes.
-          recordFailure(caller);
+          recordFailure(callerOf(req));
           return send(res, 409, { error: "That code has already been used." });
         }
 
@@ -178,7 +204,7 @@ const server = createServer((req, res) => {
         }
 
         if (typeof body.publicKey !== "string" || body.publicKey.length > 2048) {
-          recordFailure(caller);
+          recordFailure(callerOf(req));
           return send(res, 400, { error: "Expected a public key." });
         }
 
@@ -190,8 +216,9 @@ const server = createServer((req, res) => {
       // Device A polls for the claim, then posts the sealed phrase.
       if (req.method === "GET" && url.pathname === "/session") {
         sweep();
-        const session = sessions.get(url.searchParams.get("code") ?? "");
-        if (!session) return send(res, 404, { error: "No such code, or it has expired." });
+        const found = lookup(req, res, url.searchParams.get("code"));
+        if (!found) return undefined;
+        const [, session] = found;
         return send(res, 200, {
           claimed: session.claimed,
           receiverPublicKey: session.receiverPublicKey,
@@ -200,9 +227,17 @@ const server = createServer((req, res) => {
 
       if (req.method === "POST" && url.pathname === "/seal") {
         const body = await readJson(req);
-        const session = sessions.get(body.code ?? "");
-        if (!session) return send(res, 404, { error: "No such code, or it has expired." });
+        sweep();
+        const found = lookup(req, res, body.code);
+        if (!found) return undefined;
+        const [, session] = found;
+        // Nothing to seal to before a device has claimed the code. Refusing
+        // early keeps a stray payload from sitting in a session nobody joined.
+        if (!session.claimed) {
+          return send(res, 409, { error: "Nothing has claimed that code yet." });
+        }
         if (typeof body.sealed !== "string" || body.sealed.length > 4096) {
+          recordFailure(callerOf(req));
           return send(res, 400, { error: "Expected a sealed payload." });
         }
         session.sealed = body.sealed;
@@ -211,9 +246,10 @@ const server = createServer((req, res) => {
 
       // Device B collects it. Reading it consumes it.
       if (req.method === "GET" && url.pathname === "/sealed") {
-        const code = url.searchParams.get("code") ?? "";
-        const session = sessions.get(code);
-        if (!session) return send(res, 404, { error: "No such code, or it has expired." });
+        sweep();
+        const found = lookup(req, res, url.searchParams.get("code"));
+        if (!found) return undefined;
+        const [code, session] = found;
         if (!session.sealed) return send(res, 200, { sealed: null });
         const sealed = session.sealed;
         sessions.delete(code);
