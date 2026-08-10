@@ -97,17 +97,43 @@ exactly like data loss and is not.
 
 That closes the caveat this README carried through L1 and L2.
 
-### Native
+### Android
 
-`capacitor.config.ts` is set up; `npx cap add android` / `npx cap add ios` then
-needs Android Studio or Xcode, which is why those projects are not scaffolded
-here — an unbuildable hundred-file native project committed sight unseen is
-worse than a one-line instruction.
+`android/` is a real Capacitor project and it builds:
 
-`androidScheme: "https"` in that config is not cosmetic. Under Capacitor's
-default `http` scheme the WebView is not a secure context, and without a secure
-context there is no OPFS. The app would launch, find no storage, and quietly
-hold everything in memory until the process was killed.
+```bash
+npm run build                 # the web bundle first — Capacitor ships dist/
+npx cap sync android
+cd android && ./gradlew assembleDebug
+```
+
+The result is `android/app/build/outputs/apk/debug/app-debug.apk` — about 4.8 MB,
+`com.smartplanner.app`, minSdk 24, targetSdk 36, v2-signed with the Android
+debug key, and carrying the whole web app inside it including the 1 MB SQLite
+wasm. Sideload it and the planner runs with no server at all.
+
+You need a JDK 17+ and an Android SDK with `platforms;android-35` and
+`build-tools;35.0.0`, and `android/local.properties` pointing at it (gitignored,
+because it is a path on one machine).
+
+**If Gradle or `sdkmanager` fails with `PKIX path building failed`,** something
+is intercepting TLS — a corporate proxy or a security product. Its certificate
+authority is in the Windows trust store, which is why `curl` and the browser
+work, and not in Java's own `cacerts`, which is why only Java fails. Point Java
+at the OS store instead of chasing the download:
+
+```
+JAVA_TOOL_OPTIONS=-Djavax.net.ssl.trustStoreType=Windows-ROOT
+```
+
+`androidScheme: "https"` in `capacitor.config.ts` is not cosmetic. Under
+Capacitor's default `http` scheme the WebView is not a secure context, and
+without a secure context there is no OPFS. The app would launch, find no
+storage, and quietly hold everything in memory until the process was killed.
+
+### iOS
+
+Not built. `npx cap add ios` needs Xcode and therefore a Mac.
 
 ## One caveat still open
 
@@ -242,9 +268,11 @@ confirmation word are.
 
 ## Not done yet
 
-**The native projects.** `npx cap add android` / `ios` needs Android Studio or
-Xcode. This machine has neither an Android SDK nor a Java runtime, so those
-projects are not scaffolded here rather than committed unbuilt and unrun.
+**iOS.** Needs Xcode, and therefore a Mac.
+
+**A release build.** The APK here is debug-signed, which is fine for sideloading
+and not accepted by Play. A release build needs an upload key you generate and
+keep — losing it means losing the ability to update the listing.
 
 **Store submission.** Needs your own developer accounts, signing certificates
 and store listings, and Apple requires in-app purchase for paid digital goods
@@ -252,7 +280,7 @@ and store listings, and Apple requires in-app purchase for paid digital goods
 
 **A hosted relay and broker.** Both run on localhost here. The relay holds only
 ciphertext and the broker only relays it, so neither is sensitive to host — but
-they do have to be somewhere both devices can reach.
+they do have to be somewhere both devices can reach, over TLS.
 
 Screens still to convert: recurring rules, CSV import and settings. Export to
 Excel and PDF is untouched here; those modules are pure and already tested, but
