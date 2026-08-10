@@ -12,12 +12,27 @@ npm run preview        # http://localhost:5175
 npm run test:cold      # offline cold start, against the production build
 ```
 
-Tests use `playwright-core` from the parent project. The sync test needs a
-relay:
+Tests use `playwright-core` from the parent project. The sync and pairing tests
+need the two services:
 
 ```bash
-docker run -d --name evolu-relay -p 4000:4000 evoluhq/relay:latest
+docker compose up -d          # relay on 4000, pairing broker on 4100
 ```
+
+Neither can read your data — the relay holds ciphertext under an opaque owner
+id, the broker relays a public key and a ciphertext for two minutes — so where
+they run is a deployment choice rather than a trust decision. Point a build at
+real ones:
+
+```bash
+VITE_RELAY_URL=wss://relay.example.com \
+VITE_PAIRING_BROKER=https://pair.example.com \
+npm run build
+```
+
+Both need TLS in production. Not to protect the payloads, which are already
+encrypted, but because a browser on an `https` page refuses to talk to `ws://`
+or `http://`.
 
 ## The point
 

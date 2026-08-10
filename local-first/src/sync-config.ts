@@ -60,4 +60,15 @@ export function clearSyncConfig(): void {
   localStorage.removeItem(KEY);
 }
 
-export const DEFAULT_RELAY = "ws://localhost:4000";
+/**
+ * Where the encrypted copies are exchanged.
+ *
+ * Hardcoding localhost works on this machine and nowhere else — two real phones
+ * cannot reach it, which makes sync a feature that only ever works in
+ * development. Set `VITE_RELAY_URL` at build time to point a real build at a
+ * real relay.
+ *
+ * The relay sees ciphertext under an opaque owner id, so this is a deployment
+ * detail rather than a secret.
+ */
+export const DEFAULT_RELAY = import.meta.env.VITE_RELAY_URL ?? "ws://localhost:4000";

@@ -1,0 +1,40 @@
+# The two services sync needs, and neither can read your data.
+#
+#   docker compose up -d
+#
+# The relay stores ciphertext under an opaque owner id. The broker relays a
+# public key and a ciphertext for two minutes and forgets them. Running both
+# yourself is the point — but running them badly is not a privacy problem,
+# because there is nothing in either worth stealing.
+#
+# Point a build at them with:
+#   VITE_RELAY_URL=wss://relay.example.com \
+#   VITE_PAIRING_BROKER=https://pair.example.com \
+#   npm run build
+#
+# Both must be reachable by every device, and both should sit behind TLS in
+# production — not to protect the payloads, which are already encrypted, but
+# because a browser on an https page will refuse to talk to ws:// or http://.
+
+services:
+  relay:
+    image: evoluhq/relay:latest
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    volumes:
+      # The only thing worth persisting: the encrypted messages devices have not
+      # collected yet. Losing it costs a resync, not the data.
+      - relay-data:/app/data
+
+  pairing:
+    build: ./pairing-server
+    restart: unless-stopped
+    ports:
+      - "4100:4100"
+    environment:
+      PORT: "4100"
+    # No volume on purpose. Sessions live two minutes and belong in memory.
+
+volumes:
+  relay-data:

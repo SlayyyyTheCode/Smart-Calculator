@@ -3,6 +3,18 @@
 A personal finance planner you can use from your phone or your laptop against
 the same data.
 
+> **There are two of these.** This README describes the web app: Next.js and
+> Supabase, an account per user, their data on your server. It is finished and
+> verified, and it is what to deploy if you want something running this week.
+>
+> [`local-first/`](local-first/) is the second: the same planner with the data
+> on the user's own device, no account required, and opt-in sync that leaves the
+> server holding ciphertext it cannot read. That is the one to build on if the
+> destination is the app stores. It shares this repository's domain layer rather
+> than copying it — the budget thresholds, the metrics, the recurrence maths and
+> the debt amortisation are imported from `src/lib`, so a rule cannot mean two
+> different things in the two apps.
+
 - Record **daily expenses** as they happen, and keep **monthly commitments** in
   two separate buckets: **fixed** (same amount every period) and **recurring**
   (repeats but varies).

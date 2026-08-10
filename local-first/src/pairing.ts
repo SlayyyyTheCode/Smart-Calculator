@@ -161,4 +161,11 @@ export class PairingBroker {
   }
 }
 
-export const DEFAULT_BROKER = "http://127.0.0.1:4100";
+/**
+ * The pairing broker. Same reasoning as the relay: localhost is a development
+ * default, and `VITE_PAIRING_BROKER` is how a real build reaches a real one.
+ *
+ * It only ever handles a public key and a ciphertext, so where it runs is a
+ * deployment choice and not a trust decision.
+ */
+export const DEFAULT_BROKER = import.meta.env.VITE_PAIRING_BROKER ?? "http://127.0.0.1:4100";
