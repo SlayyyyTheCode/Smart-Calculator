@@ -7,6 +7,9 @@ import {
   PiggyBank,
   Plus,
   RefreshCw,
+  Repeat,
+  Settings2,
+  Upload,
   Receipt,
   Target,
   Wallet,
@@ -23,6 +26,9 @@ import { Dashboard } from "./screens/dashboard";
 import { Income } from "./screens/income";
 import { QuickAdd } from "./screens/quick-add";
 import { Transactions } from "./screens/transactions";
+import { Import } from "./screens/import";
+import { Recurring } from "./screens/recurring";
+import { Settings } from "./screens/settings";
 import { Sync } from "./screens/sync";
 import { Debts, Goals, NetWorth } from "./screens/wealth";
 
@@ -38,6 +44,9 @@ type Screen =
   | "goals"
   | "debts"
   | "net-worth"
+  | "recurring"
+  | "import"
+  | "settings"
   | "sync";
 
 /** Four fit across a phone. Everything else lives behind More. */
@@ -51,9 +60,12 @@ const TABS: { id: Screen; label: string; icon: typeof LayoutGrid }[] = [
 const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }[] = [
   { id: "transactions", label: "Transactions", hint: "Everything you have recorded", icon: Receipt },
   { id: "income", label: "Income", hint: "Active and passive, kept apart", icon: Wallet },
+  { id: "recurring", label: "Fixed & recurring", hint: "Commitments that post themselves", icon: Repeat },
   { id: "goals", label: "Goals", hint: "What you are saving for", icon: Target },
   { id: "debts", label: "Debts", hint: "What you owe and when it clears", icon: Landmark },
   { id: "net-worth", label: "Net worth", hint: "Everything owned less everything owed", icon: PiggyBank },
+  { id: "import", label: "Import CSV", hint: "A bank export, read on this device", icon: Upload },
+  { id: "settings", label: "Settings", hint: "Categories and accounts", icon: Settings2 },
   {
     id: "sync",
     label: "Sync",
@@ -64,7 +76,7 @@ const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }
 
 export function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
-  const { categories, accounts, transactions, budgets, goals, debts, assets, ready } =
+  const { categories, accounts, transactions, budgets, goals, debts, assets, rules, ready } =
     usePlannerData();
 
   /**
@@ -169,6 +181,14 @@ export function App() {
             assets={assets}
             debts={debts}
           />
+        ) : null}
+
+        {screen === "recurring" ? <Recurring rules={rules} accounts={accounts} /> : null}
+
+        {screen === "import" ? <Import accounts={accounts} /> : null}
+
+        {screen === "settings" ? (
+          <Settings categories={categories} accounts={accounts} transactions={transactions} />
         ) : null}
 
         {screen === "sync" ? <Sync config={syncConfig} /> : null}

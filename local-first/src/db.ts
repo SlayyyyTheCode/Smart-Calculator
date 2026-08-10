@@ -11,6 +11,7 @@ import {
   type CategoryRow,
   type DebtRow,
   type GoalRow,
+  type RecurringRuleRow,
   type TransactionRow,
 } from "./schema";
 
@@ -74,6 +75,9 @@ export const debtsQuery = evolu.createQuery((db) =>
 export const assetsQuery = evolu.createQuery((db) =>
   db.selectFrom("asset").selectAll().where("isDeleted", "is not", 1).orderBy("name"),
 );
+export const rulesQuery = evolu.createQuery((db) =>
+  db.selectFrom("recurringRule").selectAll().where("isDeleted", "is not", 1).orderBy("label"),
+);
 
 /**
  * Everything the screens read, in one subscription.
@@ -91,6 +95,7 @@ export function usePlannerData() {
   const [goals, setGoals] = useState<readonly GoalRow[]>([]);
   const [debts, setDebts] = useState<readonly DebtRow[]>([]);
   const [assets, setAssets] = useState<readonly AssetRow[]>([]);
+  const [rules, setRules] = useState<readonly RecurringRuleRow[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -102,11 +107,12 @@ export function usePlannerData() {
       goalsQuery,
       debtsQuery,
       assetsQuery,
+      rulesQuery,
     ];
 
     const load = () => {
       void Promise.all(queries.map((query) => evolu.loadQuery(query))).then(
-        ([c, a, t, b, g, d, s]) => {
+        ([c, a, t, b, g, d, s, r]) => {
           setCategories(c as CategoryRow[]);
           setAccounts(a as AccountRow[]);
           setTransactions(t as TransactionRow[]);
@@ -114,6 +120,7 @@ export function usePlannerData() {
           setGoals(g as GoalRow[]);
           setDebts(d as DebtRow[]);
           setAssets(s as AssetRow[]);
+          setRules(r as RecurringRuleRow[]);
           setReady(true);
         },
       );
@@ -124,5 +131,5 @@ export function usePlannerData() {
     return () => subs.forEach((un) => un());
   }, []);
 
-  return { categories, accounts, transactions, budgets, goals, debts, assets, ready };
+  return { categories, accounts, transactions, budgets, goals, debts, assets, rules, ready };
 }
