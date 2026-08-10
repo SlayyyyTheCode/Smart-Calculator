@@ -50,3 +50,4 @@ spikes/*/node_modules/
 spikes/*/dist/
 local-first/node_modules/
 local-first/dist/
+local-first/dev-dist/

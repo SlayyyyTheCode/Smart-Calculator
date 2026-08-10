@@ -5,8 +5,18 @@ nothing to sign up for**. This is L1 of the local-first plan.
 
 ```bash
 npm install
-npm run dev                 # http://localhost:5174
-node screens.test.mjs       # needs playwright-core from the parent project
+npm run dev            # http://localhost:5174
+npm run test           # screens + two-device sync (needs the relay, below)
+npm run build
+npm run preview        # http://localhost:5175
+npm run test:cold      # offline cold start, against the production build
+```
+
+Tests use `playwright-core` from the parent project. The sync test needs a
+relay:
+
+```bash
+docker run -d --name evolu-relay -p 4000:4000 evoluhq/relay:latest
 ```
 
 ## The point
@@ -55,18 +65,42 @@ viewport:
 - the data and the budget state survive a restart
 - dark mode applies
 
-## Two honest caveats
+## Installing it, and starting with no network (L5)
 
-**A cold load still needs the network.** There is no service worker in L1, so
-the HTML, the JS and the SQLite wasm worker have to be fetched. Cut the
-connection midway through a reload and the database never opens and every count
-reads zero — which looks exactly like data loss and is not. Offline *use* works;
-offline *cold start* is L5's job.
+`npm run build` emits a service worker that precaches the shell — 15 entries,
+2.2 MB, including the 1 MB SQLite wasm. That last file is the one that matters:
+without it the database cannot open and every screen reads empty, which looks
+exactly like data loss and is not.
+
+`npm run test:cold` builds the case against the production preview:
+
+- the manifest supports an install (4 icons, `standalone`)
+- the service worker activates and the wasm is in the cache
+- **with the network cut**, a full reload starts the app, the data is still
+  there, a new entry can still be recorded, and a *second* cold start works too
+  — so the first was not a warm page cache
+
+That closes the caveat this README carried through L1 and L2.
+
+### Native
+
+`capacitor.config.ts` is set up; `npx cap add android` / `npx cap add ios` then
+needs Android Studio or Xcode, which is why those projects are not scaffolded
+here — an unbuildable hundred-file native project committed sight unseen is
+worse than a one-line instruction.
+
+`androidScheme: "https"` in that config is not cosmetic. Under Capacitor's
+default `http` scheme the WebView is not a secure context, and without a secure
+context there is no OPFS. The app would launch, find no storage, and quietly
+hold everything in memory until the process was killed.
+
+## One caveat still open
 
 **`persisted` is false by default.** The browser may evict OPFS under storage
 pressure. A real build must call `navigator.storage.persist()` and handle
 refusal, or a finance app can lose a year of records to a low-disk warning
-nobody read.
+nobody read. Capacitor's native storage is not subject to this; the installable
+web version is.
 
 ## Modelling notes
 
@@ -161,8 +195,8 @@ same security with worse ergonomics.
 
 ## Not done yet
 
-L4's six-digit pairing code (see above), L5 (Capacitor shell and offline cold
-start), L6 (store submission).
+L4's six-digit pairing code (see above), the native projects themselves, and L6
+(store submission, and Apple requires in-app purchase for paid digital goods).
 
 Screens still to convert: recurring rules, CSV import and settings. Export to
 Excel and PDF is untouched here; those modules are pure and already tested, but

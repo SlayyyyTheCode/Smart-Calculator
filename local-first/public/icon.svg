@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Smart Planner">
+  <rect width="512" height="512" rx="112" fill="#1d4ed8" />
+  <!-- A wallet: the app is about what goes in and out of one. -->
+  <path
+    d="M136 168h216a40 40 0 0 1 40 40v136a40 40 0 0 1-40 40H136a24 24 0 0 1-24-24V192a24 24 0 0 1 24-24z"
+    fill="#ffffff"
+  />
+  <path d="M136 168h176v-24a24 24 0 0 0-24-24H160a24 24 0 0 0-24 24z" fill="#bfdbfe" />
+  <circle cx="332" cy="276" r="20" fill="#1d4ed8" />
+</svg>
