@@ -21,7 +21,7 @@ const page = await context.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
 
-await page.goto(`${APP}/?instance=idem${Date.now()}`, { waitUntil: "networkidle" });
+await page.goto(`${APP}/?instance=idem${Date.now()}&today=2026-08-09`, { waitUntil: "networkidle" });
 await page.waitForSelector('[data-testid="seed"]', { timeout: 30000 });
 await page.click('[data-testid="seed"]');
 await page.waitForTimeout(1200);

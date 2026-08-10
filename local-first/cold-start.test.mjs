@@ -24,7 +24,7 @@ page.on("console", (m) => {
 });
 
 // --- first run, online: install the worker and record something ----------
-await page.goto(`${APP}/`, { waitUntil: "networkidle" });
+await page.goto(`${APP}/?today=2026-08-09`, { waitUntil: "networkidle" });
 await page.waitForSelector('[data-testid="mode"]', { timeout: 30000 });
 
 const manifest = await page.request.get(`${APP}/manifest.webmanifest`);

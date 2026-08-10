@@ -13,10 +13,10 @@ import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu, type AccountRow, type RecurringRuleRow } from "../db";
 import { NONE } from "../schema";
+import { TODAY } from "../today";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";
-const TODAY = "2026-08-09";
 
 /**
  * Fixed and recurring, kept in separate buckets.

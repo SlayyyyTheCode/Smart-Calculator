@@ -40,7 +40,20 @@ export function Budgets({
 
   const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
   const statuses = budgetStatuses(budgets, transactions, categories, periodMonth).sort(byUrgency);
-  const overall = budgets.find((budget) => String(budget.categoryId) === NONE);
+  /**
+   * This month's overall cap, and only this month's.
+   *
+   * Matching on the category alone found August's budget while September was on
+   * screen, so saving a cap in a new month silently rewrote the old month's
+   * figure and the new month never got one — both wrong from one missing
+   * condition. Harmless while the clock was frozen, which is exactly why it
+   * survived: with the date stuck in August there was only ever one month.
+   */
+  const overall = budgets.find(
+    (budget) =>
+      String(budget.categoryId) === NONE &&
+      String(budget.periodMonth).slice(0, 7) === periodMonth.slice(0, 7),
+  );
 
   const save = (event: React.FormEvent) => {
     event.preventDefault();

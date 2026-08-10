@@ -9,8 +9,7 @@ import { parseAmount } from "@app/lib/money";
 
 import { evolu, type AccountRow, type CategoryRow } from "../db";
 import { NONE } from "../schema";
-
-const TODAY = "2026-08-09";
+import { TODAY } from "../today";
 
 /**
  * Quick add, on the device.
@@ -33,6 +32,10 @@ export function QuickAdd({
   const [direction, setDirection] = useState<TransactionDirection>("expense");
   const [nature, setNature] = useState<ExpenseNature>("daily");
   const [amount, setAmount] = useState("");
+  // Defaults to today, because that is what you are usually recording — but the
+  // receipt in your pocket is from yesterday often enough that a form which
+  // cannot say so is a form you have to work around.
+  const [occurredOn, setOccurredOn] = useState(TODAY);
   const [categoryId, setCategoryId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -48,7 +51,7 @@ export function QuickAdd({
     }
 
     const result = evolu.insert("transaction", {
-      occurredOn: TODAY,
+      occurredOn,
       amountMinor: minor,
       direction,
       incomeType: direction === "income" ? "active" : NONE,
@@ -120,6 +123,16 @@ export function QuickAdd({
                 />
               </Field>
             ) : null}
+
+            <Field label="Date" htmlFor="occurred-on">
+              <Input
+                id="occurred-on"
+                name="occurredOn"
+                type="date"
+                value={occurredOn}
+                onChange={(event) => setOccurredOn(event.target.value)}
+              />
+            </Field>
 
             <Field label="Category" htmlFor="category">
               <Select

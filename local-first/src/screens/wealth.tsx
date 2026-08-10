@@ -15,11 +15,11 @@ import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu } from "../db";
 import { accountBalances } from "../repository";
+import { TODAY } from "../today";
 import type { AccountRow, AssetRow, DebtRow, GoalRow, TransactionRow } from "../db";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";
-const TODAY = "2026-08-09";
 
 const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
 

@@ -21,6 +21,7 @@ import { PageHeader } from "@app/components/ui/page-header";
 import { cn } from "@app/lib/utils";
 
 import { evolu, syncConfig, usePlannerData } from "./db";
+import { PERIOD_MONTH } from "./today";
 import { Budgets } from "./screens/budgets";
 import { Dashboard } from "./screens/dashboard";
 import { Income } from "./screens/income";
@@ -32,7 +33,7 @@ import { Settings } from "./screens/settings";
 import { Sync } from "./screens/sync";
 import { Debts, Goals, NetWorth } from "./screens/wealth";
 
-const PERIOD_MONTH = "2026-08-01";
+
 
 type Screen =
   | "dashboard"

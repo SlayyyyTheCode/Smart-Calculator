@@ -63,7 +63,7 @@ async function openDevice(name) {
       brokerTraffic.push(request.postData() ?? "");
     }
   });
-  await page.goto(`${APP}/?instance=${name}`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/?instance=${name}&today=2026-08-09`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-testid="mode"]', { timeout: 30000 });
   return { context, page, errors };
 }
@@ -171,7 +171,7 @@ check("no page errors", real.length === 0, real.slice(0, 3).join(" | "));
 {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
-  await page.goto(`${APP}/?instance=brick${Date.now()}`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/?instance=brick${Date.now()}&today=2026-08-09`, { waitUntil: "networkidle" });
   await page.evaluate(() => {
     localStorage.setItem(
       "smart-planner.sync",

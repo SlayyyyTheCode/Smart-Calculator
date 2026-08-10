@@ -23,7 +23,7 @@ async function openDevice(name) {
   page.on("console", (m) => {
     if (m.type() === "error") errors.push(m.text());
   });
-  await page.goto(`${APP}/?instance=${name}`, { waitUntil: "networkidle" });
+  await page.goto(`${APP}/?instance=${name}&today=2026-08-09`, { waitUntil: "networkidle" });
   await page.waitForSelector('[data-testid="mode"]', { timeout: 30000 });
   return { context, page, errors };
 }

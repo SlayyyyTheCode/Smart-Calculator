@@ -287,6 +287,34 @@ Both devices also derive a confirmation from the key they agreed, never from
 anything the broker sent, and show it. A substituted public key produces two
 different words on two screens; matching words mean nothing got in between.
 
+### The app did not know what day it was
+
+Five hardcoded dates — `"2026-08-09"` in three screens, `"2026-08-01"` in the
+shell, and the literal string `"August 2026 so far."` twice on the dashboard —
+froze the whole thing in time. Installed on a phone it would have dated every
+entry 9 August 2026 for ever, shown August's dashboard in December, and counted
+a debt payoff from a date that never advanced. Every test passed throughout,
+because none of them had ever asked what month it was.
+
+`src/today.ts` is the one place that answers now, using the shipped `todayIso`
+with the device's own time zone — deriving a calendar date from a UTC instant is
+what puts a Sunday evening expense on Saturday for anyone west of Greenwich, and
+Singapore is eight hours the other way.
+
+A `?today=` override keeps the tests deterministic now that the clock is real.
+Without it they would pass this month and fail in September, which is worse than
+either a frozen clock or a working one: a suite that lies about when it is
+telling the truth.
+
+Two things fell out of it immediately. Quick add had no date field at all, so a
+receipt from yesterday could not be recorded as yesterday — it has one now,
+defaulted to today. And the overall budget was looked up by category alone, so
+setting a cap in September found August's and rewrote it, leaving September with
+none and August with the wrong figure. Harmless while the clock was frozen,
+which is exactly why it survived: with the date stuck in August there was only
+ever one month. `clock.test.mjs` moves the same device across a month boundary
+and back, and checks the money, the labels and the caps all follow.
+
 ### Importing the same statement twice
 
 Recurring rules got an idempotency test because double-posting rent is

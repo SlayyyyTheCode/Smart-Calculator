@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@app/
 import { EmptyState } from "@app/components/ui/empty-state";
 import { PageHeader } from "@app/components/ui/page-header";
 import { BUDGET_LEVEL_STYLES, byUrgency } from "@app/lib/domain/budget";
+import { formatMonthLabel } from "@app/lib/date";
 import { formatMoney } from "@app/lib/money";
 import { cn } from "@app/lib/utils";
 
@@ -51,7 +52,7 @@ export function Dashboard({
   if (transactions.length === 0) {
     return (
       <>
-        <PageHeader title="Dashboard" description="August 2026 so far." />
+        <PageHeader title="Dashboard" description={`${formatMonthLabel(periodMonth, LOCALE)} so far.`} />
         <EmptyState
           icon={TrendingUp}
           title="Nothing to show yet"
@@ -68,7 +69,7 @@ export function Dashboard({
 
   return (
     <>
-      <PageHeader title="Dashboard" description="August 2026 so far." />
+      <PageHeader title="Dashboard" description={`${formatMonthLabel(periodMonth, LOCALE)} so far.`} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatTile label="Spent this month" value={money(totals.expense)} hero />
