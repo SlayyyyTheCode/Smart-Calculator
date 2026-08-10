@@ -60,8 +60,21 @@ export function Transactions({
               return (
                 <li key={String(row.id)} className="flex items-center gap-3 py-2.5">
                   <div className="min-w-0 flex-1">
+                    {/*
+                      A category when there is one, otherwise whatever the row
+                      calls itself. An imported statement arrives uncategorised,
+                      and a list of thirty rows all reading "Uncategorised" is a
+                      list you cannot use — the merchant is the only thing
+                      distinguishing the coffee from the rent.
+                    */}
                     <p className="truncate text-sm font-medium">
-                      {categoryId === NONE ? "Uncategorised" : (nameById.get(categoryId) ?? "Unknown")}
+                      {categoryId !== NONE
+                        ? (nameById.get(categoryId) ?? "Unknown")
+                        : String(row.merchant) !== NONE
+                          ? String(row.merchant)
+                          : String(row.note) !== NONE
+                            ? String(row.note)
+                            : "Uncategorised"}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateLabel(String(row.occurredOn), LOCALE)}

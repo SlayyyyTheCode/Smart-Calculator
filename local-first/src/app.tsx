@@ -185,7 +185,7 @@ export function App() {
 
         {screen === "recurring" ? <Recurring rules={rules} accounts={accounts} /> : null}
 
-        {screen === "import" ? <Import accounts={accounts} /> : null}
+        {screen === "import" ? <Import accounts={accounts} transactions={transactions} /> : null}
 
         {screen === "settings" ? (
           <Settings categories={categories} accounts={accounts} transactions={transactions} />

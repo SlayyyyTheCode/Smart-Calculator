@@ -287,6 +287,34 @@ Both devices also derive a confirmation from the key they agreed, never from
 anything the broker sent, and show it. A substituted public key produces two
 different words on two screens; matching words mean nothing got in between.
 
+### Importing the same statement twice
+
+Recurring rules got an idempotency test because double-posting rent is
+double-counting money. Importing is the same money and an easier mistake to
+make: statements overlap, downloads get repeated, and a file picker gives no
+hint you have opened this file before. Measured: a three-row export imported
+twice took the month from **$109.60 to $219.20**, silently.
+
+The server version was no better — `client_uuid` is generated per row, so a
+second pass simply makes new ones — and its only protection was being able to
+undo a batch afterwards.
+
+Rows are now matched on date, amount, direction and what the bank called them,
+and the count is stated in the preview before anything is written. The matching
+is a **multiset difference**, not a set membership test, and that distinction is
+the whole difference between fixing the bug and causing its mirror image: two
+identical coffees on the same day are two real expenses, and "have I seen this
+fingerprint before" would eat the second one and understate the month. Counting
+occurrences and cancelling them off one at a time means a file re-imported whole
+is skipped whole, while a file with one more coffee than last time imports
+exactly that one coffee. `import-twice.test.mjs` checks both directions, and
+that unticking the box still imports everything — someone who really did pay
+twice has to be able to say so.
+
+While it was open: the transaction list showed the category and nothing else, so
+a freshly imported statement was thirty rows all reading "Uncategorised". It
+falls back to the merchant now.
+
 ### The rate limit was in the wrong place
 
 The obvious design puts an attempt counter on the pairing session, and it does

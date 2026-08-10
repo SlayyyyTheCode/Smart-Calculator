@@ -14,11 +14,64 @@ import {
 } from "@app/lib/import/csv";
 import { formatMoney } from "@app/lib/money";
 
-import { evolu, type AccountRow } from "../db";
+import { evolu, type AccountRow, type TransactionRow } from "../db";
 import { NONE } from "../schema";
 
 const CURRENCY = "SGD";
 const LOCALE = "en-SG";
+
+/**
+ * What makes two entries the same entry.
+ *
+ * Date, amount, direction and whatever the bank called it. Not the id, which is
+ * fresh on every parse, and not the category, which the user may have set since.
+ */
+const fingerprint = (parts: {
+  occurredOn: string;
+  amount: number;
+  direction: string;
+  merchant: string;
+  note: string;
+}) =>
+  `${parts.occurredOn}|${parts.amount}|${parts.direction}|${parts.merchant}|${parts.note}`;
+
+/**
+ * Which rows of a plan are already on the device.
+ *
+ * A multiset difference rather than a set membership test, and the difference
+ * matters: two identical coffees on the same day are two real expenses. Asking
+ * "have I seen this fingerprint before" would drop the second one and quietly
+ * understate the month — the same error as double-counting, pointing the other
+ * way. Counting occurrences and cancelling them off one by one means a file
+ * re-imported whole is skipped whole, while a file with one more coffee than
+ * last time imports exactly that one coffee.
+ */
+function alreadyPresent(
+  planned: readonly { occurredOn: string; amount: number; direction: string; merchant: string; note: string }[],
+  existing: readonly TransactionRow[],
+): boolean[] {
+  const remaining = new Map<string, number>();
+  for (const row of existing) {
+    const key = fingerprint({
+      occurredOn: String(row.occurredOn),
+      amount: Number(row.amountMinor),
+      direction: String(row.direction),
+      merchant: String(row.merchant),
+      note: String(row.note),
+    });
+    remaining.set(key, (remaining.get(key) ?? 0) + 1);
+  }
+
+  return planned.map((row) => {
+    const key = fingerprint(row);
+    const left = remaining.get(key) ?? 0;
+    if (left > 0) {
+      remaining.set(key, left - 1);
+      return true;
+    }
+    return false;
+  });
+}
 
 /**
  * Importing a bank export, on the device.
@@ -31,11 +84,18 @@ const LOCALE = "en-SG";
  *
  * The file never leaves the device, which on the server version was not true.
  */
-export function Import({ accounts }: { accounts: readonly AccountRow[] }) {
+export function Import({
+  accounts,
+  transactions,
+}: {
+  accounts: readonly AccountRow[];
+  transactions: readonly TransactionRow[];
+}) {
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [committed, setCommitted] = useState<string | null>(null);
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
 
   const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
 
@@ -126,10 +186,34 @@ export function Import({ accounts }: { accounts: readonly AccountRow[] }) {
     }
   };
 
+  const summary = plan ? summarisePlan(plan) : null;
+
+  const duplicates = plan
+    ? alreadyPresent(
+        plan.transactions.map((row) => ({
+          occurredOn: row.occurredOn,
+          amount: row.amount,
+          direction: row.direction,
+          merchant: row.merchant || NONE,
+          note: row.note || NONE,
+        })),
+        transactions,
+      )
+    : [];
+  const duplicateCount = duplicates.filter(Boolean).length;
+  const willImport = plan
+    ? plan.transactions.length - (skipDuplicates ? duplicateCount : 0)
+    : 0;
+
   const commit = () => {
     if (!plan) return;
     let count = 0;
-    for (const row of plan.transactions) {
+    let skipped = 0;
+    for (const [index, row] of plan.transactions.entries()) {
+      if (skipDuplicates && duplicates[index]) {
+        skipped += 1;
+        continue;
+      }
       const result = evolu.insert("transaction", {
         occurredOn: row.occurredOn,
         amountMinor: row.amount,
@@ -145,11 +229,12 @@ export function Import({ accounts }: { accounts: readonly AccountRow[] }) {
       });
       if (result.ok) count += 1;
     }
-    setCommitted(`Imported ${count} ${count === 1 ? "entry" : "entries"}.`);
+    setCommitted(
+      `Imported ${count} ${count === 1 ? "entry" : "entries"}.` +
+        (skipped > 0 ? ` Skipped ${skipped} already here.` : ""),
+    );
     setPlan(null);
   };
-
-  const summary = plan ? summarisePlan(plan) : null;
 
   return (
     <>
@@ -194,6 +279,9 @@ export function Import({ accounts }: { accounts: readonly AccountRow[] }) {
               {summary.count} to import · {money(summary.expense)} out · {money(summary.income)} in
               {summary.earliest ? ` · ${summary.earliest} to ${summary.latest}` : ""}
               {mapping ? ` · dates from "${mapping.date}"` : ""}
+              {duplicateCount > 0
+                ? ` · ${duplicateCount} already here`
+                : ""}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -223,9 +311,34 @@ export function Import({ accounts }: { accounts: readonly AccountRow[] }) {
               </div>
             ) : null}
 
-            <Button onClick={commit} data-testid="commit-import">
+            {duplicateCount > 0 ? (
+              // Statements overlap and downloads get repeated, so a re-import is
+              // the normal case rather than the odd one — but somebody who
+              // really did pay the same amount to the same place twice has to be
+              // able to say so. Default to skipping, and make the override one
+              // click away rather than a decision the app takes silently.
+              <label className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+                <input
+                  type="checkbox"
+                  checked={skipDuplicates}
+                  onChange={(event) => setSkipDuplicates(event.target.checked)}
+                  data-testid="skip-duplicates"
+                  className="mt-0.5 size-4 shrink-0 accent-[var(--accent)]"
+                />
+                <span className="text-muted-foreground">
+                  <strong className="font-medium text-foreground">
+                    {duplicateCount} of these match entries you already have.
+                  </strong>{" "}
+                  Skip them. Untick if you really did spend it twice.
+                </span>
+              </label>
+            ) : null}
+
+            <Button onClick={commit} disabled={willImport === 0} data-testid="commit-import">
               <Upload aria-hidden />
-              Import {summary.count} {summary.count === 1 ? "entry" : "entries"}
+              {willImport === 0
+                ? "Nothing new to import"
+                : `Import ${willImport} ${willImport === 1 ? "entry" : "entries"}`}
             </Button>
           </CardContent>
         </Card>
