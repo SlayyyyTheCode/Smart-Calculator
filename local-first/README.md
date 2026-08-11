@@ -287,6 +287,44 @@ Both devices also derive a confirmation from the key they agreed, never from
 anything the broker sent, and show it. A substituted public key produces two
 different words on two screens; matching words mean nothing got in between.
 
+### Opening it on a phone
+
+```
+npm run build
+npm run certs        # writes local-first/certs, gitignored, 365 days
+npm run preview:lan  # prints the addresses to use
+```
+
+Then on the same Wi-Fi, `https://<your-address>:5175`, and accept the
+certificate warning once per device.
+
+The TLS is not a security measure — it is self-signed and every browser will
+say so. It is there because of a mechanical requirement. The database is SQLite
+in OPFS; browsers only expose OPFS to a cross-origin-isolated page, and
+isolation requires a **secure context**. `localhost` qualifies, a bare
+`http://192.168.x.x` does not. Served over plain HTTP to a phone the app loads,
+looks completely normal, and holds everything in memory — every entry gone on
+the first refresh. A working-looking app that loses your data is worse than no
+link at all.
+
+Verified over the real network address, not just localhost:
+`isSecureContext: true`, `crossOriginIsolated: true`, OPFS present, and an entry
+still there after a reload.
+
+Windows blocks the port by default. Once, as administrator:
+
+```powershell
+New-NetFirewallRule -DisplayName "Smart Planner LAN preview (5175)" `
+  -Direction Inbound -Action Allow -Protocol TCP -LocalPort 5175 -Profile Private
+```
+
+Undo it with `Remove-NetFirewallRule -DisplayName "Smart Planner LAN preview (5175)"`.
+
+`npm run preview` is unchanged: HTTP, localhost only. The LAN mode is behind
+`LAN=1` rather than "on if a certificate happens to exist", so generating one
+never silently changes what the test suite is talking to, and never quietly
+exposes the default server to the network.
+
 ### The app did not know what day it was
 
 Five hardcoded dates — `"2026-08-09"` in three screens, `"2026-08-01"` in the

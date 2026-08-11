@@ -51,3 +51,8 @@ spikes/*/dist/
 local-first/node_modules/
 local-first/dist/
 local-first/dev-dist/
+
+# local TLS for LAN testing — never commit a private key
+local-first/certs/
+*.key
+*.crt
