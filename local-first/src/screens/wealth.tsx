@@ -14,17 +14,15 @@ import { computeNetWorth } from "@app/lib/domain/net-worth";
 import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu } from "../db";
+import { useMoneyFormat } from "../money-format";
 import { accountBalances } from "../repository";
 import { TODAY } from "../today";
 import type { AccountRow, AssetRow, DebtRow, GoalRow, TransactionRow } from "../db";
 
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
-
-const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
 
 /** Goals, with the one number that matters: what to set aside each month. */
 export function Goals({ goals }: { goals: readonly GoalRow[] }) {
+  const { money, locale } = useMoneyFormat();
   const [name, setName] = useState("");
   const [target, setTarget] = useState("");
   const [date, setDate] = useState("2027-06-30");
@@ -126,6 +124,7 @@ export function Goals({ goals }: { goals: readonly GoalRow[] }) {
 
 /** Debts, with the payoff simulated rather than solved by formula. */
 export function Debts({ debts }: { debts: readonly DebtRow[] }) {
+  const { money, locale } = useMoneyFormat();
   const [name, setName] = useState("");
   const [balance, setBalance] = useState("");
   const [apr, setApr] = useState("6.5");
@@ -267,6 +266,7 @@ export function NetWorth({
   assets: readonly AssetRow[];
   debts: readonly DebtRow[];
 }) {
+  const { money, locale } = useMoneyFormat();
   const [name, setName] = useState("");
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);

@@ -19,8 +19,13 @@ console.log("On your phone, on the same Wi-Fi:");
 for (const entry of addresses) console.log(`  https://${entry.address}:5175`);
 console.log("\nAccept the certificate warning once. It is self-signed.\n");
 
-spawn("npx", ["vite", "preview"], {
+// Vite's own binary, run by this Node directly. Going through `npx` needed
+// shell: true on Windows, which concatenates arguments instead of escaping them
+// — Node deprecated it for exactly that reason, and there is no need for a
+// shell here at all.
+const vite = fileURLToPath(new URL("../node_modules/vite/bin/vite.js", import.meta.url));
+
+spawn(process.execPath, [vite, "preview"], {
   stdio: "inherit",
-  shell: true,
   env: { ...process.env, LAN: "1" },
 }).on("exit", (code) => process.exit(code ?? 0));

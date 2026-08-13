@@ -11,9 +11,7 @@ import { formatMoney } from "@app/lib/money";
 
 import { confirmedTotals } from "../repository";
 import type { TransactionRow } from "../db";
-
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
+import { useMoneyFormat } from "../money-format";
 
 /**
  * Active against passive.
@@ -29,7 +27,7 @@ export function Income({
   transactions: readonly TransactionRow[];
   periodMonth: string;
 }) {
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
+  const { money, locale } = useMoneyFormat();
   const inMonth = transactions.filter((row) =>
     String(row.occurredOn).slice(0, 7) === periodMonth.slice(0, 7),
   );
@@ -97,7 +95,7 @@ export function Income({
                     {String(row.incomeType)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDateLabel(String(row.occurredOn), LOCALE)}
+                    {formatDateLabel(String(row.occurredOn), locale)}
                   </p>
                 </div>
                 <span className="tabular text-sm font-medium text-emerald-600 dark:text-emerald-400">

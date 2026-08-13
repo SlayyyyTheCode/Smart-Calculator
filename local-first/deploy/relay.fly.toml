@@ -1,0 +1,33 @@
+# The Evolu relay on Fly.
+#
+#   cd local-first/deploy
+#   fly launch --no-deploy --copy-config --config relay.fly.toml --name smart-planner-relay
+#   fly volumes create relay_data --size 1 --region sin
+#   fly deploy --config relay.fly.toml
+#
+# It stores encrypted messages under an opaque owner id and can read none of
+# them. Where it runs is a deployment choice, not a trust decision — the key
+# never leaves your devices.
+
+app = "smart-planner-relay"
+primary_region = "sin"   # Singapore. Change to your own nearest region.
+
+[build]
+  image = "evoluhq/relay:latest"
+
+[http_service]
+  internal_port = 4000
+  force_https = true
+  # A sleeping relay is a phone that syncs minutes late, which reads as "sync is
+  # broken" rather than "sync is thrifty". Keep one machine awake.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[mounts]
+  source = "relay_data"
+  destination = "/app/data"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

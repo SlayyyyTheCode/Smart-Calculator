@@ -9,10 +9,8 @@ import { cn } from "@app/lib/utils";
 import { Receipt } from "lucide-react";
 
 import { evolu, type CategoryRow, type TransactionRow } from "../db";
+import { useMoneyFormat } from "../money-format";
 import { NONE } from "../schema";
-
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
 
 /**
  * Everything recorded, newest first.
@@ -28,7 +26,7 @@ export function Transactions({
   transactions: readonly TransactionRow[];
   categories: readonly CategoryRow[];
 }) {
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
+  const { money, locale } = useMoneyFormat();
   const nameById = new Map(categories.map((c) => [String(c.id), String(c.name)]));
 
   if (transactions.length === 0) {
@@ -77,7 +75,7 @@ export function Transactions({
                             : "Uncategorised"}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDateLabel(String(row.occurredOn), LOCALE)}
+                      {formatDateLabel(String(row.occurredOn), locale)}
                       {isExpense ? ` · ${String(row.expenseNature)}` : " · income"}
                     </p>
                   </div>

@@ -1,0 +1,39 @@
+# The pairing broker on Fly.
+#
+#   cd local-first/pairing-server
+#   fly launch --no-deploy --copy-config --name smart-planner-pairing
+#   fly deploy
+#
+# It holds a public key and a ciphertext for two minutes and forgets them, so
+# there is no volume and nothing to back up. Losing the machine loses at most an
+# in-flight pairing, which the user retries by pressing the button again.
+
+app = "smart-planner-pairing"
+primary_region = "sin"   # Singapore. Change to your own nearest region.
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "4100"
+  # Fly's proxy terminates TLS and forwards, so every request arrives from the
+  # proxy's address. Without this, one attacker guessing codes would exhaust the
+  # limit for every real user — the limit becomes an outage instead of a
+  # defence. One hop, counted from the right: the rightmost entry is the one
+  # Fly appended and the only one it observed.
+  TRUSTED_PROXY_HOPS = "1"
+
+[http_service]
+  internal_port = 4100
+  force_https = true
+  # Sessions live in memory and last two minutes. A machine that stops loses
+  # them, and a machine that is asleep when the second device enters its code
+  # fails the pairing — so it stays up. One shared-cpu-1x is within the free
+  # allowance.
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

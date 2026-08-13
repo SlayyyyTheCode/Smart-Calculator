@@ -8,11 +8,31 @@ import { PageHeader } from "@app/components/ui/page-header";
 import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu } from "../db";
+import { isKnownCurrency, SUPPORTED_CURRENCIES, useMoneyFormat } from "../money-format";
+import { usePersistence } from "../persistence";
 import { accountBalances } from "../repository";
-import type { AccountRow, CategoryRow, TransactionRow } from "../db";
+import type { AccountRow, CategoryRow, SettingRow, TransactionRow } from "../db";
 
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
+/**
+ * A short list rather than every BCP 47 tag in existence.
+ *
+ * The locale decides digit grouping, the decimal mark and where the symbol
+ * sits — 1.234,50 € against €1,234.50. A free text box here would mostly
+ * collect typos, and a typo silently falls back rather than saying anything.
+ */
+const LOCALES = [
+  { value: "en-SG", label: "English (Singapore)" },
+  { value: "en-US", label: "English (United States)" },
+  { value: "en-GB", label: "English (United Kingdom)" },
+  { value: "en-AU", label: "English (Australia)" },
+  { value: "de-DE", label: "German (Germany)" },
+  { value: "fr-FR", label: "French (France)" },
+  { value: "es-ES", label: "Spanish (Spain)" },
+  { value: "ja-JP", label: "Japanese (Japan)" },
+  { value: "zh-CN", label: "Chinese (Simplified)" },
+  { value: "ms-MY", label: "Malay (Malaysia)" },
+  { value: "hi-IN", label: "Hindi (India)" },
+] as const;
 
 /**
  * Categories and accounts: the things everything else is built on.
@@ -25,17 +45,48 @@ export function Settings({
   categories,
   accounts,
   transactions,
+  settings,
 }: {
   categories: readonly CategoryRow[];
   accounts: readonly AccountRow[];
   transactions: readonly TransactionRow[];
+  settings: readonly SettingRow[];
 }) {
+  const { money, locale, currency } = useMoneyFormat();
+  const setting = settings[0];
+  const persisted = usePersistence();
+  const [currencyDraft, setCurrencyDraft] = useState(currency);
+  const [localeDraft, setLocaleDraft] = useState(locale);
+  const [formatError, setFormatError] = useState<string | null>(null);
+
+  /**
+   * Checked against the real list, not against whether the formatter complains.
+   *
+   * The obvious check is to format something and catch the error, and it does
+   * not work: Intl only rejects a *malformed* code. "XYZ" is three letters, so
+   * it is accepted and printed verbatim — measured, every amount on every
+   * screen read "1.234,50 XYZ" without a single error. Nothing crashed, which
+   * is precisely why it would have shipped.
+   */
+  const saveFormat = (event: React.FormEvent) => {
+    event.preventDefault();
+    const code = currencyDraft.trim().toUpperCase();
+    if (!isKnownCurrency(code)) {
+      setFormatError(`${code || "That"} is not a currency code. Try SGD, USD, EUR.`);
+      return;
+    }
+    const result = setting
+      ? evolu.update("setting", { id: setting.id, baseCurrency: code, locale: localeDraft })
+      : evolu.insert("setting", { baseCurrency: code, locale: localeDraft });
+    if (!result.ok) return setFormatError(JSON.stringify(result.error));
+    setFormatError(null);
+  };
+
   const [categoryName, setCategoryName] = useState("");
   const [accountName, setAccountName] = useState("");
   const [opening, setOpening] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
   const balances = accountBalances(accounts, transactions);
 
   const addCategory = (event: React.FormEvent) => {
@@ -74,8 +125,77 @@ export function Settings({
     <>
       <PageHeader
         title="Settings"
-        description="The categories and accounts everything else is built on."
+        description="Currency, categories and accounts — everything else is built on these."
       />
+
+      {persisted === false ? (
+        // Shown only when the browser refused. Saying "your storage is fine" to
+        // everybody else is noise; saying nothing when it is not fine is how a
+        // year of records disappears without warning.
+        <div
+          className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-muted-foreground"
+          data-testid="storage-warning"
+        >
+          <strong className="font-medium text-foreground">This browser has not promised to keep your data.</strong>{" "}
+          It may clear it if the device runs low on space. Installing the app to your home screen
+          usually earns the guarantee — or turn on sync, so a second device holds a copy.
+        </div>
+      ) : null}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Currency and formatting</CardTitle>
+          <CardDescription>
+            Applies everywhere at once. Amounts already recorded are not converted — this changes
+            how they are written, not what they are worth.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={saveFormat} className="grid gap-3 sm:grid-cols-3">
+            <Field label="Currency" htmlFor="currency" error={formatError ?? undefined}>
+              <Input
+                id="currency"
+                data-testid="currency"
+                value={currencyDraft}
+                // Upper-cased on the way in because ISO 4217 codes are, and
+                // "sgd" typed in lowercase would otherwise be rejected as
+                // unknown by Intl for no reason the user can see.
+                onChange={(event) => setCurrencyDraft(event.target.value.toUpperCase().slice(0, 3))}
+                placeholder="SGD"
+                list="currency-codes"
+              />
+              <datalist id="currency-codes">
+                {SUPPORTED_CURRENCIES.map((code) => (
+                  <option key={code} value={code} />
+                ))}
+              </datalist>
+            </Field>
+            <Field label="Format as" htmlFor="locale">
+              <select
+                id="locale"
+                data-testid="locale"
+                value={localeDraft}
+                onChange={(event) => setLocaleDraft(event.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+              >
+                {LOCALES.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div className="flex items-end">
+              <Button type="submit" data-testid="save-format">
+                Save
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground sm:col-span-3" data-testid="format-preview">
+              Currently {currency} · a thousand and a half shows as {money(150000)}
+            </p>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -56,6 +56,8 @@ export const DebtId = id("Debt");
 export type DebtId = typeof DebtId.Type;
 export const AssetId = id("Asset");
 export type AssetId = typeof AssetId.Type;
+export const SettingId = id("Setting");
+export type SettingId = typeof SettingId.Type;
 
 export const Schema = {
   category: {
@@ -129,6 +131,20 @@ export const Schema = {
     aprBps: FiniteNumber, // basis points, so the rate is an integer too
     minimumPaymentMinor: FiniteNumber,
     isClosed: FiniteNumber,
+  },
+  /**
+   * One row, holding what the app cannot guess.
+   *
+   * Currency and locale were hardcoded to SGD and en-SG in nine screens, which
+   * is fine for one person in Singapore and useless in a store listing. They
+   * live in the database rather than in localStorage because they describe the
+   * money, not the device - a phone and a laptop showing the same account in
+   * two different currencies would be a bug, and sync keeps them together.
+   */
+  setting: {
+    id: SettingId,
+    baseCurrency: NonEmptyString100, // ISO 4217, e.g. "SGD"
+    locale: NonEmptyString100, // BCP 47, e.g. "en-SG"
   },
   asset: {
     id: AssetId,

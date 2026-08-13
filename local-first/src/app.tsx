@@ -22,6 +22,7 @@ import { cn } from "@app/lib/utils";
 
 import { evolu, syncConfig, usePlannerData } from "./db";
 import { PERIOD_MONTH } from "./today";
+import { MoneyFormatProvider } from "./money-format";
 import { Budgets } from "./screens/budgets";
 import { Dashboard } from "./screens/dashboard";
 import { Income } from "./screens/income";
@@ -77,7 +78,7 @@ const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }
 
 export function App() {
   const [screen, setScreen] = useState<Screen>("dashboard");
-  const { categories, accounts, transactions, budgets, goals, debts, assets, rules, ready } =
+  const { categories, accounts, transactions, budgets, goals, debts, assets, rules, settings, ready } =
     usePlannerData();
 
   /**
@@ -112,6 +113,9 @@ export function App() {
   const activeTab: Screen = TABS.some((tab) => tab.id === screen) ? screen : "more";
 
   return (
+    // Everything below reads the currency and locale from here rather than from
+    // a constant repeated in nine files.
+    <MoneyFormatProvider settings={settings}>
     <div className="min-h-dvh bg-background text-foreground">
       <header className="border-b border-border bg-surface">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
@@ -189,7 +193,7 @@ export function App() {
         {screen === "import" ? <Import accounts={accounts} transactions={transactions} /> : null}
 
         {screen === "settings" ? (
-          <Settings categories={categories} accounts={accounts} transactions={transactions} />
+          <Settings categories={categories} accounts={accounts} transactions={transactions} settings={settings} />
         ) : null}
 
         {screen === "sync" ? <Sync config={syncConfig} /> : null}
@@ -244,5 +248,6 @@ export function App() {
         </div>
       </nav>
     </div>
+    </MoneyFormatProvider>
   );
 }

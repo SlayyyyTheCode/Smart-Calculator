@@ -68,6 +68,9 @@ export const assetsQuery = evolu.createQuery((db) =>
 export const rulesQuery = evolu.createQuery((db) =>
   db.selectFrom("recurringRule").selectAll().where("isDeleted", "is not", 1).orderBy("label"),
 );
+export const settingsQuery = evolu.createQuery((db) =>
+  db.selectFrom("setting").selectAll().where("isDeleted", "is not", 1),
+);
 
 /**
  * The row types, inferred from the queries above.
@@ -84,6 +87,7 @@ export type GoalRow = InferRow<typeof goalsQuery>;
 export type DebtRow = InferRow<typeof debtsQuery>;
 export type AssetRow = InferRow<typeof assetsQuery>;
 export type RecurringRuleRow = InferRow<typeof rulesQuery>;
+export type SettingRow = InferRow<typeof settingsQuery>;
 
 /**
  * Everything the screens read, in one subscription.
@@ -102,6 +106,7 @@ export function usePlannerData() {
   const [debts, setDebts] = useState<readonly DebtRow[]>([]);
   const [assets, setAssets] = useState<readonly AssetRow[]>([]);
   const [rules, setRules] = useState<readonly RecurringRuleRow[]>([]);
+  const [settings, setSettings] = useState<readonly SettingRow[]>([]);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -118,7 +123,8 @@ export function usePlannerData() {
         evolu.loadQuery(debtsQuery),
         evolu.loadQuery(assetsQuery),
         evolu.loadQuery(rulesQuery),
-      ]).then(([c, a, t, b, g, d, s, r]) => {
+        evolu.loadQuery(settingsQuery),
+      ]).then(([c, a, t, b, g, d, s, r, set]) => {
         setCategories(c);
         setAccounts(a);
         setTransactions(t);
@@ -127,6 +133,7 @@ export function usePlannerData() {
         setDebts(d);
         setAssets(s);
         setRules(r);
+        setSettings(set);
         setReady(true);
       });
     };
@@ -141,9 +148,10 @@ export function usePlannerData() {
       evolu.subscribeQuery(debtsQuery)(load),
       evolu.subscribeQuery(assetsQuery)(load),
       evolu.subscribeQuery(rulesQuery)(load),
+      evolu.subscribeQuery(settingsQuery)(load),
     ];
     return () => subs.forEach((un) => un());
   }, []);
 
-  return { categories, accounts, transactions, budgets, goals, debts, assets, rules, ready };
+  return { categories, accounts, transactions, budgets, goals, debts, assets, rules, settings, ready };
 }

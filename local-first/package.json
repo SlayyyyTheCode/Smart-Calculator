@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "certs": "node scripts/make-certs.mjs",
     "preview:lan": "node scripts/preview-lan.mjs",
-    "test": "node broker.test.mjs && node clock.test.mjs && node screens.test.mjs && node remaining.test.mjs && node idempotency.test.mjs && node import-twice.test.mjs && node sync.test.mjs && node pairing.test.mjs",
+    "test": "node broker.test.mjs && node clock.test.mjs && node parameters.test.mjs && node offline-privacy.test.mjs && node screens.test.mjs && node remaining.test.mjs && node idempotency.test.mjs && node import-twice.test.mjs && node sync.test.mjs && node pairing.test.mjs",
     "test:cold": "node cold-start.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
@@ -34,6 +34,7 @@
   "devDependencies": {
     "@capacitor/android": "^8.5.0",
     "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",

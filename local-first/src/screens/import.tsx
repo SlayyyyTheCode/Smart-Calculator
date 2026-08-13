@@ -15,10 +15,8 @@ import {
 import { formatMoney } from "@app/lib/money";
 
 import { evolu, type AccountRow, type TransactionRow } from "../db";
+import { useMoneyFormat } from "../money-format";
 import { NONE } from "../schema";
-
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
 
 /**
  * What makes two entries the same entry.
@@ -91,13 +89,13 @@ export function Import({
   accounts: readonly AccountRow[];
   transactions: readonly TransactionRow[];
 }) {
+  const { money, locale } = useMoneyFormat();
   const [plan, setPlan] = useState<ImportPlan | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [committed, setCommitted] = useState<string | null>(null);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
 
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
 
   /**
    * A small CSV reader, rather than pulling papaparse into the bundle for a

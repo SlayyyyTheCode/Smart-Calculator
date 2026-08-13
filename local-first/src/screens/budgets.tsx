@@ -10,11 +10,9 @@ import { formatMoney, parseAmount, toMajorString } from "@app/lib/money";
 import { cn } from "@app/lib/utils";
 
 import { evolu, type AccountRow, type BudgetRow, type CategoryRow, type TransactionRow } from "../db";
+import { useMoneyFormat } from "../money-format";
 import { budgetStatuses } from "../repository";
 import { NONE } from "../schema";
-
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
 
 /**
  * Budgets and the warning indicator the brief asked for.
@@ -35,10 +33,10 @@ export function Budgets({
   accounts?: readonly AccountRow[];
   periodMonth: string;
 }) {
+  const { money, locale } = useMoneyFormat();
   const [limit, setLimit] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
   const statuses = budgetStatuses(budgets, transactions, categories, periodMonth).sort(byUrgency);
   /**
    * This month's overall cap, and only this month's.

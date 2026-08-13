@@ -14,9 +14,7 @@ import { cn } from "@app/lib/utils";
 
 import { budgetStatuses, categoryTotals, monthMetrics } from "../repository";
 import type { AccountRow, BudgetRow, CategoryRow, TransactionRow } from "../db";
-
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
+import { useMoneyFormat } from "../money-format";
 
 /**
  * The dashboard, rendered from the device's own database.
@@ -40,7 +38,7 @@ export function Dashboard({
   periodMonth: string;
   onRecord: () => void;
 }) {
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
+  const { money, locale, currency } = useMoneyFormat();
   const metrics = monthMetrics(transactions, categories, accounts, periodMonth);
   const totals = metrics.totals;
   const net = totals.incomeActive + totals.incomePassive - totals.expense;
@@ -52,7 +50,7 @@ export function Dashboard({
   if (transactions.length === 0) {
     return (
       <>
-        <PageHeader title="Dashboard" description={`${formatMonthLabel(periodMonth, LOCALE)} so far.`} />
+        <PageHeader title="Dashboard" description={`${formatMonthLabel(periodMonth, locale)} so far.`} />
         <EmptyState
           icon={TrendingUp}
           title="Nothing to show yet"
@@ -69,7 +67,7 @@ export function Dashboard({
 
   return (
     <>
-      <PageHeader title="Dashboard" description={`${formatMonthLabel(periodMonth, LOCALE)} so far.`} />
+      <PageHeader title="Dashboard" description={`${formatMonthLabel(periodMonth, locale)} so far.`} />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <StatTile label="Spent this month" value={money(totals.expense)} hero />
@@ -151,8 +149,8 @@ export function Dashboard({
         <CardContent>
           <CategoryBars
             categories={categoryTotals(transactions, categories, periodMonth)}
-            currency={CURRENCY}
-            locale={LOCALE}
+            currency={currency}
+            locale={locale}
           />
         </CardContent>
       </Card>

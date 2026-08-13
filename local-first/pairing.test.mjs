@@ -195,24 +195,15 @@ check("no page errors", real.length === 0, real.slice(0, 3).join(" | "));
   await context.close();
 }
 
-// ---- guessing, last, because it burns this caller's allowance -----------
-{
-  let lastStatus = 0;
-  for (let i = 0; i < 30; i += 1) {
-    const attempt = await fetch(`${BROKER}/claim`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ code: String(100000 + i), publicKey: "guess" }),
-    });
-    lastStatus = attempt.status;
-    if (lastStatus === 429) break;
-  }
-  check(
-    "guessing unknown codes gets rate limited per caller",
-    lastStatus === 429,
-    `last status ${lastStatus} — a per-session counter would never have seen these`,
-  );
-}
+// The guessing limit is not exercised here. It used to be, and it made the
+// suite unrepeatable: the limit is per caller over ten minutes, this test
+// shares an address with the shared broker, and thirty deliberate misses left
+// the next run of the whole suite locked out of its own pairing. Two runs
+// inside ten minutes failed on a defence working correctly, which is the worst
+// kind of red.
+//
+// It lives in broker.test.mjs, which starts its own broker on its own port and
+// can be as hostile as it likes without touching anything else.
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);

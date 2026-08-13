@@ -169,15 +169,28 @@ and the key itself is gone.
 
 ### iOS
 
-Not built. `npx cap add ios` needs Xcode and therefore a Mac.
+`ios/` is a real Capacitor project now and `npx cap sync ios` copies the build
+into it. Compiling and signing needs Xcode, and therefore a Mac:
 
-## One caveat still open
+```bash
+npm run build && npx cap sync ios
+npx cap open ios      # macOS only
+```
 
-**`persisted` is false by default.** The browser may evict OPFS under storage
-pressure. A real build must call `navigator.storage.persist()` and handle
-refusal, or a finance app can lose a year of records to a low-disk warning
-nobody read. Capacitor's native storage is not subject to this; the installable
-web version is.
+## Storage durability
+
+OPFS is best-effort by default: under disk pressure a browser may evict it, and
+here that is not a cache miss but a year of somebody's finances with no server
+copy to restore from — because having no server copy is the whole design.
+
+`navigator.storage.persist()` is requested once at startup. Browsers decide for
+themselves: an installed PWA is usually granted it silently, a page opened once
+may be refused. Refusal is not an error and does not interrupt anything, but it
+is shown in Settings, because the alternative is losing records to a low-disk
+warning nobody read.
+
+Capacitor builds are not affected — the native container's files are the app's
+own. This matters for the installable web version.
 
 ## Modelling notes
 
@@ -286,6 +299,41 @@ phrase, and each of its 24 words individually. None of it is there.
 Both devices also derive a confirmation from the key they agreed, never from
 anything the broker sent, and show it. A substituted public key produces two
 different words on two screens; matching words mean nothing got in between.
+
+### Currency and locale were hardcoded in nine files
+
+`const CURRENCY = "SGD"` and `const LOCALE = "en-SG"` appeared in nine screens.
+Nine copies of a decision is nine chances for eight of them to be missed, and it
+made the app unshippable anywhere but Singapore — which is the point of putting
+it in a store. They live in the database now, not in localStorage, because they
+describe the money rather than the device: a phone and a laptop showing one
+account in two currencies would be a bug.
+
+`parameters.test.mjs` changes the setting and then checks the dashboard, the
+transaction list, budgets, income, net worth, import, goals and debts all
+followed — German formatting on purpose, because `1.234,50` inverts both
+separators against `1,234.50`, so a screen still on the old setting is
+unmistakable rather than subtly wrong.
+
+**The validation I wrote first was based on a false premise.** I assumed
+`Intl.NumberFormat` throws on an unknown currency, so I wrapped it in a
+try/catch and called that validation. It does not. It rejects a *malformed*
+code — anything that is not three ASCII letters — but `"XYZ"` is three letters,
+so it is accepted and printed verbatim. The test caught it: every amount on
+every screen read `1.234,50 XYZ`, with no error anywhere. Nothing crashing is
+exactly why it would have shipped. The check is now against
+`Intl.supportedValuesOf("currency")`, which is the real list: 162 entries, SGD
+in it, XYZ not.
+
+### Nothing leaves the device
+
+The claim the whole design rests on, so it is measured rather than asserted.
+`offline-privacy.test.mjs` records every request the page makes while an amount
+and a category are entered, then checks three things: that no request goes
+anywhere but this origin, that the amount appears in none of them, and that the
+category name does not either. Latest run: **738 requests, all local, neither
+value present in any of them.** Then it cuts the network entirely and records
+another expense, which works, because there was never anything on the other end.
 
 ### Opening it on a phone
 
@@ -445,17 +493,30 @@ to be complete in.
 
 ## Not done yet
 
-**iOS.** Needs Xcode, and therefore a Mac.
+**iOS.** The Xcode project exists (`local-first/ios`) and Capacitor syncs the
+build into it. Compiling and signing it needs Xcode, and therefore a Mac:
+
+```bash
+npm run build && npx cap sync ios
+npx cap open ios      # macOS only
+```
+
+Android is verified here — `npx cap sync android && ./gradlew assembleDebug`
+produces `android/app/build/outputs/apk/debug/app-debug.apk`. Two things that
+cost time: Gradle needs `JAVA_HOME` set (any JDK 21), and if the build fails
+with *"Unable to delete directory ... packageDebug\tmp"* that is OneDrive or a
+stale daemon holding the folder, not the code — `./gradlew --stop`, delete
+`app/build/intermediates/incremental/packageDebug`, build again.
 
 **Store submission.** Needs your own developer accounts, signing certificates
 and store listings, and Apple requires in-app purchase for paid digital goods
 (15–30%). None of it is something this repository can do on your behalf.
 
-**A hosted relay and broker.** Both run on localhost here. The relay holds only
-ciphertext and the broker only relays it, so neither is sensitive to host — but
-they do have to be somewhere both devices can reach, over TLS. Set
-`TRUSTED_PROXY_HOPS` on the broker when you put a proxy in front of it, or the
-guessing limit collapses onto a single shared bucket.
+**A hosted relay and broker.** Configs for Fly are in `deploy/` and
+`pairing-server/fly.toml`, with the commands in `deploy/README.md`. Both fit the
+free allowance. `TRUSTED_PROXY_HOPS = "1"` is already set on the broker, which
+matters: Fly terminates TLS and forwards, so without it every caller looks like
+Fly's proxy and one attacker guessing codes locks out everybody.
 
 Export to Excel and PDF is untouched here. Those modules are pure and already
 tested, but they run on a server in the shipped app and would need to run on

@@ -12,11 +12,9 @@ import { describeRecurrence } from "@app/lib/domain/recurring";
 import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu, type AccountRow, type RecurringRuleRow } from "../db";
+import { useMoneyFormat } from "../money-format";
 import { NONE } from "../schema";
 import { TODAY } from "../today";
-
-const CURRENCY = "SGD";
-const LOCALE = "en-SG";
 
 /**
  * Fixed and recurring, kept in separate buckets.
@@ -38,6 +36,7 @@ export function Recurring({
   rules: readonly RecurringRuleRow[];
   accounts: readonly AccountRow[];
 }) {
+  const { money, locale } = useMoneyFormat();
   const [kind, setKind] = useState<Extract<ExpenseNature, "fixed" | "recurring">>("fixed");
   const [label, setLabel] = useState("");
   const [amount, setAmount] = useState("");
@@ -45,7 +44,6 @@ export function Recurring({
   const [error, setError] = useState<string | null>(null);
   const [posted, setPosted] = useState<string | null>(null);
 
-  const money = (minor: number) => formatMoney(minor, CURRENCY, LOCALE);
 
   const toDomain = (row: RecurringRuleRow): MaterializableRule => ({
     id: String(row.id),
