@@ -22,6 +22,7 @@ import { cn } from "@app/lib/utils";
 
 import { evolu, syncConfig, usePlannerData } from "./db";
 import { PERIOD_MONTH } from "./today";
+import { NONE } from "./schema";
 import { MoneyFormatProvider } from "./money-format";
 import { Budgets } from "./screens/budgets";
 import { Dashboard } from "./screens/dashboard";
@@ -105,7 +106,48 @@ export function App() {
       ["Entertainment", "#6366f1", 60],
     ];
     for (const [name, color, sortOrder] of starters) {
-      evolu.insert("category", { name, kind: "expense", color, sortOrder, isArchived: 0 });
+      evolu.insert("category", {
+        name,
+        kind: "expense",
+        color,
+        sortOrder,
+        isArchived: 0,
+        incomeType: NONE,
+        isCpfEligible: 0,
+      });
+    }
+
+    /**
+     * Income, split active from passive at the category rather than per entry.
+     *
+     * Which is which is a property of the income: a dividend is passive every
+     * time it arrives. Asking on each entry invites two different answers for
+     * the same thing, and the FIRE figure is measured against passive income —
+     * so a slip there quietly changes the one number the whole plan turns on.
+     *
+     * Gross Income carries the CPF flag. It is a flag rather than a match on
+     * the name because the name belongs to the user, who may rename it.
+     */
+    const income: [string, string, number, "active" | "passive", 0 | 1][] = [
+      ["Gross Income", "#0ea5e9", 110, "active", 1],
+      ["General Income", "#38bdf8", 120, "active", 0],
+      ["Freelance Income", "#22d3ee", 130, "active", 0],
+      ["Commissions and Fees", "#2dd4bf", 140, "active", 0],
+      ["Dividend", "#34d399", 150, "passive", 0],
+      ["Interests", "#4ade80", 160, "passive", 0],
+      ["Royalties", "#a3e635", 170, "passive", 0],
+      ["Capital gains", "#facc15", 180, "passive", 0],
+    ];
+    for (const [name, color, sortOrder, incomeType, isCpfEligible] of income) {
+      evolu.insert("category", {
+        name,
+        kind: "income",
+        color,
+        sortOrder,
+        isArchived: 0,
+        incomeType,
+        isCpfEligible,
+      });
     }
   };
 
@@ -154,6 +196,7 @@ export function App() {
           <QuickAdd
             categories={categories}
             accounts={accounts}
+            settings={settings}
             onSaved={() => setScreen("dashboard")}
           />
         ) : null}

@@ -224,6 +224,7 @@ export function Import({
         merchant: row.merchant || NONE,
         note: row.note || NONE,
         recurringRuleId: NONE,
+        cpfMinor: 0,
       });
       if (result.ok) count += 1;
     }

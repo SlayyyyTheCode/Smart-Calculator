@@ -79,6 +79,33 @@ export function Dashboard({
         <StatTile label="Net this month" value={money(net)} />
       </div>
 
+      {/*
+        Shown only when there is CPF to show: a "Take home" identical to income
+        tells the reader nothing and sends them looking for the difference.
+
+        The testid sits on a wrapper because StatTile does not accept one, and
+        TypeScript does not object — a hyphenated JSX attribute skips the
+        excess-property check, so it would simply have vanished at runtime.
+      */}
+      {totals.cpf > 0 ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div data-testid="take-home">
+            <StatTile
+              label="Take home"
+              value={money(totals.takeHome)}
+              hint="Income less your CPF share — what reached your bank"
+            />
+          </div>
+          <div data-testid="cpf-total">
+            <StatTile
+              label="CPF this month"
+              value={money(totals.cpf)}
+              hint="Your share only. Your employer contributes on top of this."
+            />
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <Meter
           label="FIRE coverage"

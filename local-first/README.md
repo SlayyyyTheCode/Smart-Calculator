@@ -300,6 +300,50 @@ Both devices also derive a confirmation from the key they agreed, never from
 anything the broker sent, and show it. A substituted public key produces two
 different words on two screens; matching words mean nothing got in between.
 
+### Income categories, CPF, and take-home pay
+
+Income splits into eight categories — Gross Income, General Income, Freelance
+Income, Commissions and Fees, Dividend, Interests, Royalties, Capital gains —
+and each one carries whether it is **active or passive**. That lives on the
+category rather than being asked per entry, because it is a property of the
+income: a dividend is passive every time. Asking each time invites two
+different answers for the same thing, and the FIRE figure is measured against
+passive income, so a slip there quietly moves the one number the plan turns on.
+
+Gross Income carries a CPF flag — a flag rather than a match on the name,
+because the name belongs to the user and they may rename it.
+
+**The rates are the CPF Board's, from the Board.** `src/lib/domain/cpf.ts` is
+built from *CPF contribution rates from 1 January 2026*, Tables 1–3, and the
+unit tests assert against the Board's own stated maximums rather than against
+this implementation — Table 1 gives "Max. of $1,600" for an employee's share,
+and 0.20 × $8,000 = $1,600, which is also how the $8,000 Ordinary Wage ceiling
+was confirmed rather than assumed.
+
+Four things that are easy to get wrong and are therefore tested:
+
+- **Only the employee's share is deducted.** The employer's 17% is real money
+  going into the same CPF accounts, but it was never in the gross figure a
+  person types in, so subtracting it would understate their income.
+- **The band boundary sits on the older side of the birthday.** "55 and below"
+  then "above 55 to 60" means exactly 55 is still the first band.
+- **Between $500 and $750 the contribution phases in** at `k × (wage − $500)`,
+  where `k` comes from the table and is *not* derivable from the percentage.
+- **The employee's share is rounded down to whole dollars**, per the Board's
+  step 2. Skipping that overstates the deduction by up to 99 cents a month.
+
+A simplification, checked rather than assumed: for 1st- and 2nd-year PRs the
+Board publishes both Graduated/Graduated and Full-employer/Graduated-employee
+schemes. They differ only in the **employer's** column — the employee's is
+identical — so the F/G election cannot change take-home pay, and the app does
+not ask about it.
+
+The contribution is **stored on the transaction**, not recomputed for display.
+It is a fact about that payment; recomputing would restate an old payslip under
+today's age band and silently rewrite history every birthday. `cpf.test.mjs`
+changes the date of birth after recording a salary and checks the old figure
+does not move.
+
 ### Currency and locale were hardcoded in nine files
 
 `const CURRENCY = "SGD"` and `const LOCALE = "en-SG"` appeared in nine screens.

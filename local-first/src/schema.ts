@@ -67,6 +67,22 @@ export const Schema = {
     color: NonEmptyString100,
     sortOrder: FiniteNumber,
     isArchived: FiniteNumber, // 0 | 1 — SQLite has no boolean
+    /**
+     * For income categories: "active" or "passive"; NONE on expense ones.
+     *
+     * On the category rather than chosen per entry, because it is a property of
+     * the income and not of the day. A dividend is passive every time, and
+     * asking again on each entry is an invitation to answer differently and
+     * quietly break the FIRE figure, which is measured against passive income.
+     */
+    incomeType: NonEmptyString100,
+    /**
+     * 1 when this category is salary subject to CPF.
+     *
+     * A flag rather than matching on the name, because the name is the user's
+     * and they may rename or translate it.
+     */
+    isCpfEligible: FiniteNumber,
   },
   account: {
     id: AccountId,
@@ -89,6 +105,15 @@ export const Schema = {
     merchant: NonEmptyString100,
     note: NonEmptyString1000,
     recurringRuleId: NonEmptyString100,
+    /**
+     * The employee's CPF contribution on this payment, in cents.
+     *
+     * Stored rather than recomputed on the fly, because it is a fact about the
+     * payment and not a function of today's settings. Recomputing would restate
+     * last year's payslip using this year's age band and this year's rates, and
+     * silently change history every birthday.
+     */
+    cpfMinor: FiniteNumber,
   },
   budget: {
     id: BudgetId,
@@ -145,6 +170,10 @@ export const Schema = {
     id: SettingId,
     baseCurrency: NonEmptyString100, // ISO 4217, e.g. "SGD"
     locale: NonEmptyString100, // BCP 47, e.g. "en-SG"
+    /** YYYY-MM-DD, or NONE. Needed only to pick a CPF age band. */
+    birthDate: NonEmptyString100,
+    /** CpfResidency, or NONE when CPF does not apply. */
+    cpfResidency: NonEmptyString100,
   },
   asset: {
     id: AssetId,

@@ -5,12 +5,15 @@ import { Button } from "@app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@app/components/ui/card";
 import { Field, Input } from "@app/components/ui/field";
 import { PageHeader } from "@app/components/ui/page-header";
+import { ageOn, type CpfResidency } from "@app/lib/domain/cpf";
 import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu } from "../db";
+import { NONE } from "../schema";
 import { isKnownCurrency, SUPPORTED_CURRENCIES, useMoneyFormat } from "../money-format";
 import { usePersistence } from "../persistence";
 import { accountBalances } from "../repository";
+import { TODAY } from "../today";
 import type { AccountRow, CategoryRow, SettingRow, TransactionRow } from "../db";
 
 /**
@@ -58,6 +61,38 @@ export function Settings({
   const [currencyDraft, setCurrencyDraft] = useState(currency);
   const [localeDraft, setLocaleDraft] = useState(locale);
   const [formatError, setFormatError] = useState<string | null>(null);
+  const [birthDraft, setBirthDraft] = useState(
+    String(setting?.birthDate ?? NONE) === NONE ? "" : String(setting?.birthDate),
+  );
+  const [residencyDraft, setResidencyDraft] = useState(String(setting?.cpfResidency ?? NONE));
+  const [cpfError, setCpfError] = useState<string | null>(null);
+
+  /**
+   * Date of birth is stored because CPF rates step down by age band, and the
+   * band has to be the one that applied on the day of the payment rather than
+   * the one that applies now. Storing the date rather than an age means a
+   * birthday does not silently restate last year's payslips.
+   */
+  const saveCpf = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (residencyDraft !== NONE && !/^\d{4}-\d{2}-\d{2}$/.test(birthDraft)) {
+      setCpfError("A date of birth is needed to pick the right age band.");
+      return;
+    }
+    if (birthDraft && ageOn(birthDraft, TODAY) < 0) {
+      setCpfError("That date is in the future.");
+      return;
+    }
+    const patch = {
+      birthDate: birthDraft || NONE,
+      cpfResidency: residencyDraft,
+    };
+    const result = setting
+      ? evolu.update("setting", { id: setting.id, ...patch })
+      : evolu.insert("setting", { baseCurrency: currency, locale, ...patch });
+    if (!result.ok) return setCpfError(JSON.stringify(result.error));
+    setCpfError(null);
+  };
 
   /**
    * Checked against the real list, not against whether the formatter complains.
@@ -77,7 +112,7 @@ export function Settings({
     }
     const result = setting
       ? evolu.update("setting", { id: setting.id, baseCurrency: code, locale: localeDraft })
-      : evolu.insert("setting", { baseCurrency: code, locale: localeDraft });
+      : evolu.insert("setting", { baseCurrency: code, locale: localeDraft, birthDate: NONE, cpfResidency: NONE });
     if (!result.ok) return setFormatError(JSON.stringify(result.error));
     setFormatError(null);
   };
@@ -98,6 +133,8 @@ export function Settings({
       color: "#64748b",
       sortOrder: (categories.length + 1) * 10,
       isArchived: 0,
+      incomeType: NONE,
+      isCpfEligible: 0,
     });
     if (!result.ok) return setError(JSON.stringify(result.error));
     setError(null);
@@ -192,6 +229,55 @@ export function Settings({
             </div>
             <p className="text-xs text-muted-foreground sm:col-span-3" data-testid="format-preview">
               Currently {currency} · a thousand and a half shows as {money(150000)}
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>CPF and take-home pay</CardTitle>
+          <CardDescription>
+            For Singapore Citizens and PRs. Income filed under a salary category is shown gross,
+            with your CPF share and the take-home figure worked out from it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={saveCpf} className="grid gap-3 sm:grid-cols-3">
+            <Field label="Status" htmlFor="residency" error={cpfError ?? undefined}>
+              <select
+                id="residency"
+                data-testid="residency"
+                value={residencyDraft}
+                onChange={(event) => setResidencyDraft(event.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/30"
+              >
+                <option value={NONE}>CPF does not apply</option>
+                <option value="citizen_or_pr3">Citizen, or PR 3rd year onwards</option>
+                <option value="pr_year1">PR, 1st year</option>
+                <option value="pr_year2">PR, 2nd year</option>
+              </select>
+            </Field>
+            <Field label="Date of birth" htmlFor="birth-date">
+              <Input
+                id="birth-date"
+                data-testid="birth-date"
+                type="date"
+                value={birthDraft}
+                onChange={(event) => setBirthDraft(event.target.value)}
+              />
+            </Field>
+            <div className="flex items-end">
+              <Button type="submit" data-testid="save-cpf">
+                Save
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground sm:col-span-3" data-testid="cpf-status">
+              {residencyDraft === NONE
+                ? "No CPF is deducted; salary is shown as entered."
+                : birthDraft
+                  ? `Age ${ageOn(birthDraft, TODAY)} today. Rates from 1 January 2026; only your own share is deducted, since the employer's was never part of your gross.`
+                  : "Add a date of birth to pick the age band."}
             </p>
           </form>
         </CardContent>

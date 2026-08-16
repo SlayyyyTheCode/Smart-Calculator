@@ -34,6 +34,10 @@ export type ConfirmedTotals = {
   expense: Minor;
   incomeActive: Minor;
   incomePassive: Minor;
+  /** Employee CPF deducted from salary in the period. */
+  cpf: Minor;
+  /** Income less that CPF: what actually reached a bank account. */
+  takeHome: Minor;
 };
 
 /**
@@ -44,6 +48,7 @@ export function confirmedTotals(transactions: readonly TransactionRow[]): Confir
   let expense = 0;
   let incomeActive = 0;
   let incomePassive = 0;
+  let cpf = 0;
 
   for (const row of transactions) {
     if (str(row.status) !== "confirmed") continue;
@@ -54,10 +59,20 @@ export function confirmedTotals(transactions: readonly TransactionRow[]): Confir
       incomePassive += amount;
     } else {
       incomeActive += amount;
+      // Read off the row rather than recomputed. The contribution is a fact
+      // about that payment; recomputing it would restate an old payslip under
+      // today's age band.
+      cpf += num(row.cpfMinor);
     }
   }
 
-  return { expense, incomeActive, incomePassive };
+  return {
+    expense,
+    incomeActive,
+    incomePassive,
+    cpf,
+    takeHome: incomeActive + incomePassive - cpf,
+  };
 }
 
 /** Confirmed expense per category for a month, shaped for the metrics module. */

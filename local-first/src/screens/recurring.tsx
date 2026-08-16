@@ -120,6 +120,8 @@ export function Recurring({
           merchant: NONE,
           note: planned.note || NONE,
           recurringRuleId: planned.ruleId,
+          // Recurring rules do not carry salary, so nothing to deduct.
+          cpfMinor: 0,
         });
         if (inserted.ok) count += 1;
       }
