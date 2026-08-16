@@ -300,6 +300,70 @@ Both devices also derive a confirmation from the key they agreed, never from
 anything the broker sent, and show it. A substituted public key produces two
 different words on two screens; matching words mean nothing got in between.
 
+## Getting the data out, and how fast it goes
+
+### Export
+
+The point of a local-first app is that the data is yours, and that is only true
+if you can take it somewhere else. The Export screen builds the file on the
+device out of rows already in memory and hands it to the share sheet on a phone
+or the downloads folder on a laptop. Nothing is uploaded to produce it — there
+is no server that could keep a copy of the file it made you.
+
+**CSV** for a spreadsheet, **JSON** for a real backup. Amounts in the CSV are
+plain numbers — `1234.50`, never `$1,234.50` — because a currency symbol turns
+the column into text the moment Excel opens it, and a column you cannot sum is
+not much of an export. The JSON keeps amounts in cents, because converting money
+to a decimal and back is where money goes missing.
+
+`export.test.mjs` intercepts the download and reads the bytes rather than
+checking that a button was clickable: the header, the row count, the date
+ordering, that the range picker really restricts, that a salary carries its CPF
+and a dividend is labelled passive.
+
+### The numbers
+
+`npm run bench` measures against the production build with three years of
+spending imported. Guessing would have been wrong three times over here, so the
+figures are wall-clock from the browser.
+
+| | 500 rows | 6,000 rows |
+|---|---|---|
+| open dashboard | 99 ms | 82 ms |
+| open transactions | 318 ms | 267 ms |
+| record one expense | 132 ms | 116 ms |
+| cold start with data | 1,131 ms | 977 ms |
+| import | 3.0 s | 16.1 s |
+
+**The interesting one was the transactions screen at 25.8 seconds**, and it was
+none of the things it looked like. Not the DOM: windowing the list to 100 rows
+barely moved it. Not the dev server: the production build was the same. Chrome's
+own counters settled it — **230 ms of main-thread work out of 13,811 ms**. The
+screen was waiting on the SQLite worker.
+
+The worker was still writing the import. `evolu.insert` returns when the write
+is *queued*, not when it is durable, so the loop finished in 365 ms, the screen
+said "Imported 6000", and the worker carried on for another thirteen seconds.
+Nothing was broken and nothing looked wrong — the next screen you opened simply
+hung, after the app had already told you it was done.
+
+So the fix was to stop lying rather than to make anything faster. `onComplete`
+fires per row when the worker has actually taken it, so the progress bar and the
+"Imported" message are the worker's count, not the loop's. The import now
+honestly reports 16 s for 6,000 rows (**~370 rows/sec durable**, which is
+Evolu's per-row mutation cost — there is no batch API) and every other screen
+dropped to a quarter of a second because nothing is queued behind it any more.
+
+Two real fixes came out of the same investigation and are worth keeping:
+reloads are throttled to one every 250 ms, because nine subscriptions each
+triggering a reload of all nine queries meant a burst of writes re-ran a
+full-table query thousands of times; and the transaction list renders a hundred
+rows at a time with a **Show more**, because rendering six thousand is work
+nobody asked for.
+
+Daily use — the thing this app is actually for — is 116 ms to record an expense
+and under a second to cold start with three years of history.
+
 ### Income categories, CPF, and take-home pay
 
 Income splits into eight categories — Gross Income, General Income, Freelance

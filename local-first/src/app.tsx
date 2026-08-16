@@ -10,6 +10,7 @@ import {
   Repeat,
   Settings2,
   Upload,
+  Download,
   Receipt,
   Target,
   Wallet,
@@ -29,6 +30,7 @@ import { Dashboard } from "./screens/dashboard";
 import { Income } from "./screens/income";
 import { QuickAdd } from "./screens/quick-add";
 import { Transactions } from "./screens/transactions";
+import { Export } from "./screens/export";
 import { Import } from "./screens/import";
 import { Recurring } from "./screens/recurring";
 import { Settings } from "./screens/settings";
@@ -49,6 +51,7 @@ type Screen =
   | "net-worth"
   | "recurring"
   | "import"
+  | "export"
   | "settings"
   | "sync";
 
@@ -68,6 +71,7 @@ const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }
   { id: "debts", label: "Debts", hint: "What you owe and when it clears", icon: Landmark },
   { id: "net-worth", label: "Net worth", hint: "Everything owned less everything owed", icon: PiggyBank },
   { id: "import", label: "Import CSV", hint: "A bank export, read on this device", icon: Upload },
+  { id: "export", label: "Export", hint: "Take your records to a laptop or a backup", icon: Download },
   { id: "settings", label: "Settings", hint: "Categories and accounts", icon: Settings2 },
   {
     id: "sync",
@@ -234,6 +238,10 @@ export function App() {
         {screen === "recurring" ? <Recurring rules={rules} accounts={accounts} /> : null}
 
         {screen === "import" ? <Import accounts={accounts} transactions={transactions} /> : null}
+
+        {screen === "export" ? (
+          <Export transactions={transactions} categories={categories} accounts={accounts} />
+        ) : null}
 
         {screen === "settings" ? (
           <Settings categories={categories} accounts={accounts} transactions={transactions} settings={settings} />

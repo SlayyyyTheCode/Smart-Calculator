@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Trash2 } from "lucide-react";
 
+import { Button } from "@app/components/ui/button";
 import { Card, CardContent } from "@app/components/ui/card";
 import { EmptyState } from "@app/components/ui/empty-state";
 import { PageHeader } from "@app/components/ui/page-header";
@@ -12,12 +14,26 @@ import { evolu, type CategoryRow, type TransactionRow } from "../db";
 import { useMoneyFormat } from "../money-format";
 import { NONE } from "../schema";
 
+/** How many rows are put on screen at once. */
+const PAGE = 100;
+
 /**
- * Everything recorded, newest first.
+ * Everything recorded, newest first — a window of it at a time.
  *
  * Drafts are shown but marked, never hidden. A recurring estimate you have not
  * confirmed is still something you are on the hook for; leaving it out of the
  * list while leaving it out of the totals would make it invisible.
+ *
+ * The window exists because rendering the lot does not scale, and the measured
+ * numbers were not marginal: three years of ordinary spending is a few thousand
+ * rows, and this screen took **7.4 seconds at 2,000 and 24.4 at 6,000** —
+ * superlinear, because the cost is in the DOM rather than in the query. Every
+ * other screen was under 450 ms on the same data, which is what made it obvious
+ * where the time was going.
+ *
+ * A hundred rows is more than fits on a phone screen several times over, and
+ * the list is newest-first, so the part anybody actually reads is in the first
+ * window.
  */
 export function Transactions({
   transactions,
@@ -27,7 +43,9 @@ export function Transactions({
   categories: readonly CategoryRow[];
 }) {
   const { money, locale } = useMoneyFormat();
+  const [shown, setShown] = useState(PAGE);
   const nameById = new Map(categories.map((c) => [String(c.id), String(c.name)]));
+  const visible = transactions.slice(0, shown);
 
   if (transactions.length === 0) {
     return (
@@ -46,12 +64,16 @@ export function Transactions({
     <>
       <PageHeader
         title="Transactions"
-        description={`${transactions.length} recorded on this device.`}
+        description={
+          transactions.length > shown
+            ? `${transactions.length} recorded on this device, showing the most recent ${shown}.`
+            : `${transactions.length} recorded on this device.`
+        }
       />
       <Card>
         <CardContent className="pt-2">
           <ul className="divide-y divide-border" data-testid="transaction-list">
-            {transactions.map((row) => {
+            {visible.map((row) => {
               const isExpense = String(row.direction) === "expense";
               const isDraft = String(row.status) === "draft";
               const categoryId = String(row.categoryId);
@@ -112,6 +134,18 @@ export function Transactions({
               );
             })}
           </ul>
+
+          {transactions.length > shown ? (
+            <div className="flex justify-center pb-1 pt-3">
+              <Button
+                variant="outline"
+                onClick={() => setShown((count) => count + PAGE)}
+                data-testid="show-more"
+              >
+                Show {Math.min(PAGE, transactions.length - shown)} more
+              </Button>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
     </>

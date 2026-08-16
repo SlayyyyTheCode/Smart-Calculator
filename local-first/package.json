@@ -9,9 +9,10 @@
     "preview": "vite preview",
     "certs": "node scripts/make-certs.mjs",
     "preview:lan": "node scripts/preview-lan.mjs",
-    "test": "node broker.test.mjs && node clock.test.mjs && node cpf.test.mjs && node parameters.test.mjs && node offline-privacy.test.mjs && node screens.test.mjs && node remaining.test.mjs && node idempotency.test.mjs && node import-twice.test.mjs && node sync.test.mjs && node pairing.test.mjs",
+    "test": "node broker.test.mjs && node clock.test.mjs && node cpf.test.mjs && node parameters.test.mjs && node offline-privacy.test.mjs && node screens.test.mjs && node remaining.test.mjs && node idempotency.test.mjs && node import-twice.test.mjs && node export.test.mjs && node sync.test.mjs && node pairing.test.mjs",
     "test:cold": "node cold-start.test.mjs",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "bench": "node bench.mjs"
   },
   "keywords": [],
   "author": "",

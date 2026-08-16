@@ -92,11 +92,14 @@ export type SettingRow = InferRow<typeof settingsQuery>;
 /**
  * Everything the screens read, in one subscription.
  *
- * Reloading all four on any change is deliberate at this size: the whole
- * database is a few hundred rows on a phone, and one obviously-correct
- * invalidation beats four subtly-wrong ones. It is the kind of thing to make
- * cleverer when a profile says to, not before.
+ * Reloading every query on any change is deliberate: one obviously-correct
+ * invalidation beats nine subtly-wrong ones, and measured at six thousand rows
+ * a full reload after recording an expense costs under 200 ms. What was not
+ * deliberate was doing it nine times over — see the scheduler below.
  */
+/** The floor between two reloads. See `schedule` below for why it is wall-clock. */
+const MIN_RELOAD_GAP_MS = 250;
+
 export function usePlannerData() {
   const [categories, setCategories] = useState<readonly CategoryRow[]>([]);
   const [accounts, setAccounts] = useState<readonly AccountRow[]>([]);
@@ -110,6 +113,40 @@ export function usePlannerData() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    let disposed = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let lastRun = 0;
+
+    /**
+     * At most one reload every {@link MIN_RELOAD_GAP_MS}, however many
+     * subscriptions fired.
+     *
+     * Two problems, one fix. There are nine subscriptions and each one calls
+     * this, so a single insert scheduled nine identical reloads of all nine
+     * queries. And a bulk import writes rows one at a time — Evolu has no batch
+     * mutation — so a six thousand row statement produced a storm of
+     * notifications, each one re-running a query over the whole six thousand.
+     *
+     * Measured before this: importing 6,000 rows left the app unusable for
+     * about twenty seconds afterwards. The import itself returned in half a
+     * second and said "Imported 6000", so nothing looked wrong; the next screen
+     * you opened simply hung. Coalescing per tick was not enough, because the
+     * notifications arrive across many ticks — the gap has to be wall-clock.
+     *
+     * Trailing edge, so the last write always lands. A quarter second is below
+     * the threshold where a person notices a list updating late, and it turns
+     * thousands of full-table queries into a handful.
+     */
+    const schedule = () => {
+      if (disposed || timer) return;
+      const wait = Math.max(0, MIN_RELOAD_GAP_MS - (Date.now() - lastRun));
+      timer = setTimeout(() => {
+        timer = null;
+        lastRun = Date.now();
+        if (!disposed) load();
+      }, wait);
+    };
+
     // Loaded one at a time rather than by mapping over an array of queries:
     // the array's element type is a union of eight different Query types, and
     // Promise.all over it loses which row shape belongs to which setter.
@@ -125,6 +162,7 @@ export function usePlannerData() {
         evolu.loadQuery(rulesQuery),
         evolu.loadQuery(settingsQuery),
       ]).then(([c, a, t, b, g, d, s, r, set]) => {
+        if (disposed) return;
         setCategories(c);
         setAccounts(a);
         setTransactions(t);
@@ -140,17 +178,21 @@ export function usePlannerData() {
 
     load();
     const subs = [
-      evolu.subscribeQuery(categoriesQuery)(load),
-      evolu.subscribeQuery(accountsQuery)(load),
-      evolu.subscribeQuery(transactionsQuery)(load),
-      evolu.subscribeQuery(budgetsQuery)(load),
-      evolu.subscribeQuery(goalsQuery)(load),
-      evolu.subscribeQuery(debtsQuery)(load),
-      evolu.subscribeQuery(assetsQuery)(load),
-      evolu.subscribeQuery(rulesQuery)(load),
-      evolu.subscribeQuery(settingsQuery)(load),
+      evolu.subscribeQuery(categoriesQuery)(schedule),
+      evolu.subscribeQuery(accountsQuery)(schedule),
+      evolu.subscribeQuery(transactionsQuery)(schedule),
+      evolu.subscribeQuery(budgetsQuery)(schedule),
+      evolu.subscribeQuery(goalsQuery)(schedule),
+      evolu.subscribeQuery(debtsQuery)(schedule),
+      evolu.subscribeQuery(assetsQuery)(schedule),
+      evolu.subscribeQuery(rulesQuery)(schedule),
+      evolu.subscribeQuery(settingsQuery)(schedule),
     ];
-    return () => subs.forEach((un) => un());
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      subs.forEach((un) => un());
+    };
   }, []);
 
   return { categories, accounts, transactions, budgets, goals, debts, assets, rules, settings, ready };
