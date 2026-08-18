@@ -327,13 +327,22 @@ and a dividend is labelled passive.
 spending imported. Guessing would have been wrong three times over here, so the
 figures are wall-clock from the browser.
 
-| | 500 rows | 6,000 rows |
-|---|---|---|
-| open dashboard | 99 ms | 82 ms |
-| open transactions | 318 ms | 267 ms |
-| record one expense | 132 ms | 116 ms |
-| cold start with data | 1,131 ms | 977 ms |
-| import | 3.0 s | 16.1 s |
+Each figure is the range over repeated runs rather than one sample, because the
+first set taken here was a single run and it was wrong by a factor of two and a
+half — see the note below.
+
+| | 500 rows | 2,000 rows | 6,000 rows |
+|---|---|---|---|
+| open dashboard | 84 ms | 84–85 ms | 82–85 ms |
+| open transactions | 150 ms | 148–150 ms | 150–167 ms |
+| record one expense | 83 ms | 84–99 ms | 83–100 ms |
+| cold start with data | 670–705 ms | 674–720 ms | 687–738 ms |
+| import | 0.90 s | 1.95–2.47 s | 5.6–6.7 s |
+| durable writes | 556/sec | 811–1,026/sec | 900–1,069/sec |
+
+Reading a screen does not get slower as the database grows: opening the
+transactions list is 150 ms at five hundred rows and 150 ms at six thousand.
+Importing is linear, because every row is a separate durable write.
 
 **The interesting one was the transactions screen at 25.8 seconds**, and it was
 none of the things it looked like. Not the DOM: windowing the list to 100 rows
@@ -350,9 +359,17 @@ hung, after the app had already told you it was done.
 So the fix was to stop lying rather than to make anything faster. `onComplete`
 fires per row when the worker has actually taken it, so the progress bar and the
 "Imported" message are the worker's count, not the loop's. The import now
-honestly reports 16 s for 6,000 rows (**~370 rows/sec durable**, which is
-Evolu's per-row mutation cost — there is no batch API) and every other screen
-dropped to a quarter of a second because nothing is queued behind it any more.
+honestly reports the time it takes — around **6 seconds for 6,000 rows**, near a
+thousand durable writes a second, which is Evolu's per-row mutation cost since
+there is no batch API — and every other screen dropped to about 150 ms because
+nothing is queued behind it any more.
+
+**A correction worth keeping.** The first version of this table said 16 s and
+~370 rows/sec for that import. That was one run, and repeating it four times
+gives 5.6–6.7 s and 900–1,069 rows/sec under the same conditions — thirteen
+containers up, CPU at 7%. A single sample of a number that varies is not a
+measurement, and quoting it made the app look two and a half times slower than
+it is. The figures above are ranges over repeats for that reason.
 
 Two real fixes came out of the same investigation and are worth keeping:
 reloads are throttled to one every 250 ms, because nine subscriptions each
@@ -361,8 +378,9 @@ full-table query thousands of times; and the transaction list renders a hundred
 rows at a time with a **Show more**, because rendering six thousand is work
 nobody asked for.
 
-Daily use — the thing this app is actually for — is 116 ms to record an expense
-and under a second to cold start with three years of history.
+Daily use — the thing this app is actually for — is **under 100 ms to record an
+expense** and **about 700 ms to cold start** with three years of history, and
+neither moves as the database grows.
 
 ### Income categories, CPF, and take-home pay
 
