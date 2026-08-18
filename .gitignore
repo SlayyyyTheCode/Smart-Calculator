@@ -56,3 +56,4 @@ local-first/dev-dist/
 local-first/certs/
 *.key
 *.crt
+local-first/.vercel/
