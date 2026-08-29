@@ -65,9 +65,9 @@ const add = async (amount, categoryLabel, direction, date) => {
 
 await add("5000.00", "Gross Income", "income", "2026-08-01");
 await add("800.00", "Dividend", "income", "2026-08-02");
-await add("42.55", "Groceries", "expense", "2026-08-03");
+await add("42.55", "Food", "expense", "2026-08-03");
 // A row in a different year, to prove the range picker actually restricts.
-await add("99.00", "Transport", "expense", "2025-06-10");
+await add("99.00", "Transportation", "expense", "2025-06-10");
 
 // ---- the screen ---------------------------------------------------------
 await goTo("export");

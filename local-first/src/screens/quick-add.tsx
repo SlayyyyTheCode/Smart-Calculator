@@ -13,6 +13,9 @@ import { useMoneyFormat } from "../money-format";
 import { NONE } from "../schema";
 import { TODAY } from "../today";
 
+/** Sentinel for the "add one" row in the picker; never stored. */
+const NEW = "__new__";
+
 /**
  * Quick add, on the device.
  *
@@ -42,8 +45,45 @@ export function QuickAdd({
   // cannot say so is a form you have to work around.
   const [occurredOn, setOccurredOn] = useState(TODAY);
   const [categoryId, setCategoryId] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  /**
+   * A new category, created and selected in one go.
+   *
+   * `kind` follows the direction being recorded, so adding one while entering
+   * income cannot produce a category that never appears again because it was
+   * filed as an expense. Income ones default to active: passive is the rarer
+   * case and the one worth choosing deliberately, since the FIRE figure is
+   * measured against it.
+   */
+  const addCategory = () => {
+    const name = newCategory.trim();
+    if (!name) {
+      setError("Give the category a name");
+      return;
+    }
+    const result = evolu.insert("category", {
+      name,
+      kind: direction,
+      color: "#64748b",
+      sortOrder: (categories.length + 1) * 10,
+      isArchived: 0,
+      incomeType: direction === "income" ? "active" : NONE,
+      isCpfEligible: 0,
+    });
+    if (!result.ok) {
+      setError(JSON.stringify(result.error));
+      return;
+    }
+    setError(null);
+    setCategoryId(String(result.value.id));
+    setNewCategory("");
+    setAdding(false);
+  };
 
   /**
    * The picker only offers categories that belong to this direction.
@@ -185,8 +225,12 @@ export function QuickAdd({
               <Select
                 id="category"
                 name="categoryId"
-                value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
+                value={adding ? NEW : categoryId}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAdding(value === NEW);
+                  if (value !== NEW) setCategoryId(value);
+                }}
               >
                 <option value="">Uncategorised</option>
                 {available.map((category) => (
@@ -194,8 +238,46 @@ export function QuickAdd({
                     {String(category.name)}
                   </option>
                 ))}
+                <option value={NEW}>+ New category&hellip;</option>
               </Select>
             </Field>
+
+            {/*
+              The seventeenth category, and every one after it.
+              
+              Here rather than only in Settings because the moment you notice the
+              list is missing something is the moment you are trying to file
+              something under it. Sending someone to another screen to add it
+              means they pick whatever is closest instead, and a row filed under
+              the wrong heading is worse than one left uncategorised: it is wrong
+              in a way the totals never show.
+            */}
+            {adding ? (
+              <div className="flex items-end gap-2" data-testid="new-category-row">
+                <Field label="Name it" htmlFor="new-category" className="flex-1">
+                  <Input
+                    id="new-category"
+                    data-testid="new-category"
+                    value={newCategory}
+                    onChange={(event) => setNewCategory(event.target.value)}
+                    placeholder={direction === "expense" ? "Pet care" : "Rental income"}
+                  />
+                </Field>
+                <Button type="button" onClick={addCategory} data-testid="save-category">
+                  Add
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setAdding(false);
+                    setNewCategory("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : null}
 
             {direction === "income" && chosen ? (
               <p className="text-xs text-muted-foreground" data-testid="income-type">

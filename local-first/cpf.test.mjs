@@ -62,7 +62,7 @@ check("every income category is offered", missing.length === 0, missing.length ?
 
 check(
   "expense categories are not offered under income",
-  !incomeOptions.includes("Groceries") && !incomeOptions.includes("Housing"),
+  !incomeOptions.includes("Food") && !incomeOptions.includes("Household"),
   incomeOptions.join(", ").slice(0, 90),
 );
 
@@ -74,7 +74,7 @@ await page.waitForTimeout(400);
 const expenseOptions = await page.locator("#category option").allInnerTexts();
 check(
   "and income categories are not offered under expense",
-  !expenseOptions.includes("Dividend") && expenseOptions.includes("Groceries"),
+  !expenseOptions.includes("Dividend") && expenseOptions.includes("Food"),
   expenseOptions.join(", ").slice(0, 80),
 );
 

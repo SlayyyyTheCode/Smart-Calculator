@@ -382,6 +382,31 @@ Daily use — the thing this app is actually for — is **under 100 ms to record
 expense** and **about 700 ms to cold start** with three years of history, and
 neither moves as the database grows.
 
+### The expense categories
+
+Sixteen ship with a new install — Food, Social Life, Self-Development,
+Transportation, Culture, Household, Apparel, Beauty, Health, Education, Gift,
+Electronic, Tax, Lottery, Donation/Prayer, Miscellaneous — replacing the six
+placeholders the spike started with. Six is enough to demo and not enough to
+use: the first thing anybody does with a six-category planner is find their
+spending does not fit it, and a row filed under the wrong heading is worse than
+one left uncategorised, because it is wrong in a way the totals do not show.
+
+The seventeenth is that there is no seventeenth. **+ New category…** sits at the
+bottom of the picker on the entry screen, so a category can be created at the
+moment it is needed rather than by breaking off to visit Settings — which is
+the only time anybody notices the list is missing something. The new one is
+selected immediately so recording carries straight on.
+
+Its `kind` follows the direction being recorded. Adding one while entering
+income cannot produce a category filed as an expense that then never appears
+again, and `categories.test.mjs` checks both directions of that leak along with
+survival across a restart.
+
+Colours sweep the hue wheel once so sixteen dots stay tellable apart, with a
+neutral slate on Miscellaneous — a catch-all should not look like a category
+with an opinion — and none of them collide with the income colours.
+
 ### Income categories, CPF, and take-home pay
 
 Income splits into eight categories — Gross Income, General Income, Freelance

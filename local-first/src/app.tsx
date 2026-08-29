@@ -101,13 +101,40 @@ export function App() {
       isLiquid: 1,
       isArchived: 0,
     });
+    /**
+     * The expense categories a new install starts with.
+     *
+     * Sixteen rather than six, because the first thing anybody does with a
+     * six-category planner is discover their spending does not fit it, and a
+     * row filed under the wrong heading is worse than one left uncategorised —
+     * it is wrong in a way the totals do not show.
+     *
+     * They are not exhaustive and are not meant to be. Every one can be renamed
+     * or archived, and a seventeenth can be added at the moment of recording
+     * rather than by going to Settings first, which is the only time anybody
+     * notices the list is missing something.
+     *
+     * Colours sweep the hue wheel once so sixteen dots stay tellable apart, with
+     * a neutral slate on Miscellaneous — a catch-all should not look like a
+     * category with an opinion. None of them collide with the income colours.
+     */
     const starters: [string, string, number][] = [
-      ["Food & Dining", "#ef4444", 10],
-      ["Groceries", "#f97316", 20],
-      ["Transport", "#f59e0b", 30],
-      ["Housing", "#84cc16", 40],
-      ["Utilities", "#22c55e", 50],
-      ["Entertainment", "#6366f1", 60],
+      ["Food", "#ef4444", 10],
+      ["Social Life", "#f97316", 20],
+      ["Self-Development", "#f59e0b", 30],
+      ["Transportation", "#84cc16", 40],
+      ["Culture", "#22c55e", 50],
+      ["Household", "#10b981", 60],
+      ["Apparel", "#14b8a6", 70],
+      ["Beauty", "#06b6d4", 80],
+      ["Health", "#0284c7", 90],
+      ["Education", "#3b82f6", 100],
+      ["Gift", "#6366f1", 110],
+      ["Electronic", "#8b5cf6", 120],
+      ["Tax", "#a855f7", 130],
+      ["Lottery", "#d946ef", 140],
+      ["Donation/Prayer", "#ec4899", 150],
+      ["Miscellaneous", "#64748b", 160],
     ];
     for (const [name, color, sortOrder] of starters) {
       evolu.insert("category", {
@@ -133,14 +160,14 @@ export function App() {
      * the name because the name belongs to the user, who may rename it.
      */
     const income: [string, string, number, "active" | "passive", 0 | 1][] = [
-      ["Gross Income", "#0ea5e9", 110, "active", 1],
-      ["General Income", "#38bdf8", 120, "active", 0],
-      ["Freelance Income", "#22d3ee", 130, "active", 0],
-      ["Commissions and Fees", "#2dd4bf", 140, "active", 0],
-      ["Dividend", "#34d399", 150, "passive", 0],
-      ["Interests", "#4ade80", 160, "passive", 0],
-      ["Royalties", "#a3e635", 170, "passive", 0],
-      ["Capital gains", "#facc15", 180, "passive", 0],
+      ["Gross Income", "#0ea5e9", 1010, "active", 1],
+      ["General Income", "#38bdf8", 1020, "active", 0],
+      ["Freelance Income", "#22d3ee", 1030, "active", 0],
+      ["Commissions and Fees", "#2dd4bf", 1040, "active", 0],
+      ["Dividend", "#34d399", 1050, "passive", 0],
+      ["Interests", "#4ade80", 1060, "passive", 0],
+      ["Royalties", "#a3e635", 1070, "passive", 0],
+      ["Capital gains", "#facc15", 1080, "passive", 0],
     ];
     for (const [name, color, sortOrder, incomeType, isCpfEligible] of income) {
       evolu.insert("category", {
