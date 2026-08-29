@@ -238,7 +238,7 @@ export function QuickAdd({
                     {String(category.name)}
                   </option>
                 ))}
-                <option value={NEW}>+ New category&hellip;</option>
+                <option value={NEW}>+ Add more&hellip;</option>
               </Select>
             </Field>
 

@@ -392,11 +392,23 @@ use: the first thing anybody does with a six-category planner is find their
 spending does not fit it, and a row filed under the wrong heading is worse than
 one left uncategorised, because it is wrong in a way the totals do not show.
 
-The seventeenth is that there is no seventeenth. **+ New category…** sits at the
+The seventeenth is that there is no seventeenth. **+ Add more…** sits at the
 bottom of the picker on the entry screen, so a category can be created at the
 moment it is needed rather than by breaking off to visit Settings — which is
 the only time anybody notices the list is missing something. The new one is
 selected immediately so recording carries straight on.
+
+**Existing installs get them too.** Seeding only ran on an empty database, so
+the sixteen shipped and nobody who was already using the app ever saw them —
+they kept the six they had started with. A first install is not the only moment
+the standard set can change, so anything standard the database has never had is
+added on load.
+
+The risk in that fix is the opposite mistake: re-adding something the user put
+away, once per launch, forever. The check is against **every** category ever
+created, archived and deleted ones included, so putting one away keeps it away.
+`categories.test.mjs` archives two, restarts, and counts the rows — one copy
+each, still archived, still out of the picker.
 
 Its `kind` follows the direction being recorded. Adding one while entering
 income cannot produce a category filed as an expense that then never appears

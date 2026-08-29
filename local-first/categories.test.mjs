@@ -65,9 +65,9 @@ check(
 // ---- the seventeenth ----------------------------------------------------
 await page.locator('label:has-text("Expense")').first().click();
 await page.waitForTimeout(500);
-check("the picker offers to add one", (await options()).some((o) => /New category/i.test(o)), "");
+check("the picker offers to add one", (await options()).some((o) => /Add more/i.test(o)), "");
 
-await page.selectOption("#category", { label: "+ New category…" });
+await page.selectOption("#category", { label: "+ Add more…" });
 await page.waitForTimeout(500);
 await page.screenshot({ path: `${OUT}/cat-2-adding.png`, fullPage: true });
 check("choosing it asks for a name", await page.locator('[data-testid="new-category"]').isVisible(), "");
@@ -101,7 +101,7 @@ await page.click('[data-testid="tab-add"]');
 await page.waitForTimeout(600);
 await page.locator('label:has-text("Income")').first().click();
 await page.waitForTimeout(400);
-await page.selectOption("#category", { label: "+ New category…" });
+await page.selectOption("#category", { label: "+ Add more…" });
 await page.waitForTimeout(400);
 await page.fill('[data-testid="new-category"]', "Rental income");
 await page.click('[data-testid="save-category"]');
@@ -122,6 +122,76 @@ await page.waitForTimeout(3000);
 await page.click('[data-testid="tab-add"]');
 await page.waitForTimeout(900);
 check("custom categories survive a restart", (await options()).includes("Pet care"), "");
+
+
+// ---- an install that already existed ------------------------------------
+// The case that actually bit: seeding only ran on an empty database, so anyone
+// already using the app kept the six categories they started with and never saw
+// the sixteen. A first install is not the only moment the standard set changes.
+//
+// The risk in fixing it is the opposite mistake — re-adding something the user
+// put away, once per launch, forever. Archived categories still exist, so the
+// top-up must see them and leave them alone.
+{
+  const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const old = await ctx2.newPage();
+  await old.goto(`${APP}/?instance=legacy${Date.now()}&today=2026-08-29`, { waitUntil: "networkidle" });
+  await old.waitForSelector('[data-testid="seed"]', { timeout: 30000 });
+  await old.click('[data-testid="seed"]');
+  await old.waitForTimeout(2500);
+
+  await old.click('[data-testid="tab-more"]');
+  await old.waitForTimeout(300);
+  await old.click('[data-testid="more-settings"]');
+  await old.waitForTimeout(900);
+
+  const put_away = ["Lottery", "Apparel"];
+  for (const name of put_away) {
+    await old
+      .locator('[data-testid="category-list"] li', { hasText: name })
+      .first()
+      .locator('[data-testid="toggle-archive"]')
+      .click();
+    await old.waitForTimeout(800);
+  }
+  await old.screenshot({ path: `${OUT}/cat-4-archived.png`, fullPage: true });
+
+  await old.reload({ waitUntil: "networkidle" });
+  await old.waitForTimeout(4500);
+
+  await old.click('[data-testid="tab-more"]');
+  await old.waitForTimeout(300);
+  await old.click('[data-testid="more-settings"]');
+  await old.waitForTimeout(1200);
+  const listed = await old.$$eval('[data-testid="category-list"] li', (n) =>
+    n.map((li) => li.textContent.trim()),
+  );
+  await old.screenshot({ path: `${OUT}/cat-5-after-restart.png`, fullPage: true });
+
+  for (const name of put_away) {
+    const copies = listed.filter((row) => row.startsWith(name)).length;
+    check(
+      `archiving ${name} does not get undone by the top-up`,
+      copies === 1,
+      `${copies} copies of ${name}`,
+    );
+  }
+
+  await old.click('[data-testid="tab-add"]');
+  await old.waitForTimeout(1000);
+  const options2 = await old.$$eval("#category option", (n) => n.map((o) => o.textContent.trim()));
+  check(
+    "an archived category stays out of the picker",
+    put_away.every((name) => !options2.includes(name)),
+    put_away.filter((n) => options2.includes(n)).join(", ") || "both stayed away",
+  );
+  check(
+    "and the rest of the set is still offered",
+    options2.includes("Food") && options2.includes("Miscellaneous"),
+    "",
+  );
+  await ctx2.close();
+}
 
 const real = errors.filter((e) => !/favicon|React DevTools|Failed to load resource/i.test(e));
 check("no page errors", real.length === 0, real.slice(0, 3).join(" | "));

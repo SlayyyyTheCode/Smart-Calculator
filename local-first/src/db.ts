@@ -47,6 +47,17 @@ if (syncConfig && !syncConfig.adopted) {
 export const categoriesQuery = evolu.createQuery((db) =>
   db.selectFrom("category").selectAll().where("isDeleted", "is not", 1).orderBy("sortOrder"),
 );
+/**
+ * Every category ever created, deleted ones included.
+ *
+ * Used only to decide which of the standard categories are genuinely missing.
+ * Matching against the visible list would resurrect anything the user had
+ * deliberately deleted, every time the app started — the app arguing with them
+ * once a session about a category they had already thrown away.
+ */
+export const allCategoriesQuery = evolu.createQuery((db) =>
+  db.selectFrom("category").selectAll(),
+);
 export const accountsQuery = evolu.createQuery((db) =>
   db.selectFrom("account").selectAll().where("isDeleted", "is not", 1).orderBy("name"),
 );
