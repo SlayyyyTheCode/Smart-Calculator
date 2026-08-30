@@ -75,18 +75,46 @@ export function confirmedTotals(transactions: readonly TransactionRow[]): Confir
   };
 }
 
+/**
+ * Confirmed expense per category between two dates, inclusive.
+ *
+ * The same shaping as the monthly version and the same exclusions — drafts and
+ * income are not spending — but over an arbitrary range, because "where did it
+ * go" is a question people ask of a week, a quarter and a decade, not only of a
+ * calendar month.
+ */
+export function categoryTotalsInRange(
+  transactions: readonly TransactionRow[],
+  categories: readonly CategoryRow[],
+  from: string,
+  to: string,
+): CategoryTotal[] {
+  return shapeTotals(transactions, categories, (row) => {
+    const on = str(row.occurredOn);
+    return on >= from && on <= to;
+  });
+}
+
 /** Confirmed expense per category for a month, shaped for the metrics module. */
 export function categoryTotals(
   transactions: readonly TransactionRow[],
   categories: readonly CategoryRow[],
   periodMonth: string,
 ): CategoryTotal[] {
+  return shapeTotals(transactions, categories, (row) => sameMonth(row.occurredOn, periodMonth));
+}
+
+function shapeTotals(
+  transactions: readonly TransactionRow[],
+  categories: readonly CategoryRow[],
+  within: (row: TransactionRow) => boolean,
+): CategoryTotal[] {
   const nameById = new Map(categories.map((c) => [str(c.id), str(c.name)]));
   const byCategory = new Map<string, Minor>();
 
   for (const row of transactions) {
     if (str(row.status) !== "confirmed" || str(row.direction) !== "expense") continue;
-    if (!sameMonth(row.occurredOn, periodMonth)) continue;
+    if (!within(row)) continue;
     const key = str(row.categoryId);
     byCategory.set(key, (byCategory.get(key) ?? 0) + num(row.amountMinor));
   }

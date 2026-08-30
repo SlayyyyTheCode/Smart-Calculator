@@ -14,3 +14,44 @@
  */
 @source "../../src/components";
 @source "../src";
+
+/*
+ * Donut slice colours.
+ *
+ * One blue hue stepped by magnitude, darkest for the largest share — colour
+ * here encodes size, not identity. The five steps are the reference sequential
+ * ramp checked with the palette validator in ordinal mode against both
+ * surfaces: monotone lightness, every adjacent gap above the minimum, and the
+ * lightest step still clearing contrast against the surface behind it.
+ *
+ * Declared here rather than chosen in JavaScript because a value picked in JS
+ * is picked once: it would not follow a viewer who changes theme with the page
+ * open. All three states are covered — the media query for the OS setting, and
+ * both data-theme scopes for an explicit choice, so neither can win by accident.
+ */
+.viz {
+  --slice-0: #104281;
+  --slice-1: #1c5cab;
+  --slice-2: #2a78d6;
+  --slice-3: #5598e7;
+  --slice-4: #86b6ef;
+  --slice-other: #8a8a85;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .viz {
+    --slice-0: #184f95;
+    --slice-1: #256abf;
+    --slice-2: #3987e5;
+    --slice-3: #6da7ec;
+    --slice-4: #9ec5f4;
+    --slice-other: #6f6f6a;
+  }
+}
+:root[data-theme="dark"] .viz {
+  --slice-0: #184f95;
+  --slice-1: #256abf;
+  --slice-2: #3987e5;
+  --slice-3: #6da7ec;
+  --slice-4: #9ec5f4;
+  --slice-other: #6f6f6a;
+}

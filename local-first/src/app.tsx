@@ -12,6 +12,7 @@ import {
   Upload,
   Download,
   Receipt,
+  PieChart,
   Target,
   Wallet,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import { allCategoriesQuery, evolu, syncConfig, usePlannerData } from "./db";
 import { PERIOD_MONTH } from "./today";
 import { NONE } from "./schema";
 import { MoneyFormatProvider } from "./money-format";
+import { Breakdown } from "./screens/breakdown";
 import { Budgets } from "./screens/budgets";
 import { Dashboard } from "./screens/dashboard";
 import { Income } from "./screens/income";
@@ -114,6 +116,7 @@ type Screen =
   | "budgets"
   | "more"
   | "transactions"
+  | "breakdown"
   | "income"
   | "goals"
   | "debts"
@@ -134,6 +137,7 @@ const TABS: { id: Screen; label: string; icon: typeof LayoutGrid }[] = [
 
 const MORE: { id: Screen; label: string; hint: string; icon: typeof LayoutGrid }[] = [
   { id: "transactions", label: "Transactions", hint: "Everything you have recorded", icon: Receipt },
+  { id: "breakdown", label: "Where it went", hint: "Spending by category, over any period", icon: PieChart },
   { id: "income", label: "Income", hint: "Active and passive, kept apart", icon: Wallet },
   { id: "recurring", label: "Fixed & recurring", hint: "Commitments that post themselves", icon: Repeat },
   { id: "goals", label: "Goals", hint: "What you are saving for", icon: Target },
@@ -294,6 +298,10 @@ export function App() {
 
         {screen === "transactions" ? (
           <Transactions transactions={transactions} categories={categories} />
+        ) : null}
+
+        {screen === "breakdown" ? (
+          <Breakdown transactions={transactions} categories={categories} />
         ) : null}
 
         {screen === "income" ? (

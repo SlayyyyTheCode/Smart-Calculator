@@ -382,6 +382,42 @@ Daily use — the thing this app is actually for — is **under 100 ms to record
 expense** and **about 700 ms to cold start** with three years of history, and
 neither moves as the database grows.
 
+### Where it went — the donut, and choosing a period
+
+Spending by category over any period: six presets spanning days, months and
+years, plus two date fields for anything the presets miss.
+
+**Five slices and a remainder, never sixteen.** A donut answers "is one of these
+most of it?" and answers little else; past about six arcs they stop being
+comparable by eye and the chart becomes a legend with decoration attached. The
+sixteen categories do not go in a pie, so the fifth-largest and everything below
+folds into a neutral **Other**, and the ranked table underneath carries every
+category — which is where anyone comparing seventh against eighth should be
+looking anyway.
+
+**Colour encodes magnitude, not identity.** One blue hue, darkest for the
+largest share. That is why changing the period can recolour a category: the
+colour is saying "this is the biggest", which is the thing the reader came for.
+Identity comes from the labels and the table, never colour alone. Other is grey
+because it is a remainder rather than a category with an opinion.
+
+The five steps are the reference sequential ramp, run through the palette
+validator in ordinal mode against **both** surfaces rather than eyeballed —
+monotone lightness, every adjacent gap above the minimum, lightest step still
+clearing the surface. Six steps failed: the light end bunched up, which is what
+turned five-plus-Other from a compromise into the right answer. They live in
+`styles.css` under all three theme states, not chosen in JavaScript, because a
+value picked in JS is picked once and will not follow a viewer who changes theme
+with the page open.
+
+Two things only came out of rendering it and looking, which the validator cannot
+do. The gaps between slices were **2π times too wide** — `2 / R_OUTER` is a gap
+in radians and the layout works in turns — which looked deliberate rather than
+broken. And the seven-day preset was correct while the test asserting it was
+wrong: today is the 30th, so the window opens on the 24th and an entry on the
+23rd is properly excluded. Asserting the round number would have passed while an
+off-by-one at the boundary went unnoticed.
+
 ### The expense categories
 
 Sixteen ship with a new install — Food, Social Life, Self-Development,
