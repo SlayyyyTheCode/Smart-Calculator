@@ -114,19 +114,36 @@ export function lastNMonths(date: IsoDate, count: number): IsoDate[] {
 }
 
 /** "March 2026" style label for a month-start date. */
+
+/**
+ * Date formatter instances, kept — same reason as the money ones.
+ *
+ * Every row of a transaction list carries a date label, so this is constructed
+ * as often as there are rows on screen.
+ */
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormat(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(options)}`;
+  let formatter = dateFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, options);
+    dateFormatters.set(key, formatter);
+  }
+  return formatter;
+}
+
 export function formatMonthLabel(month: IsoDate, locale = DEFAULT_LOCALE): string {
   const { year, month: m } = parseIsoDate(month);
-  return new Intl.DateTimeFormat(locale, {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, m - 1, 1)));
+  return dateFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(Date.UTC(year, m - 1, 1)),
+  );
 }
 
 /** "31 Mar 2026" style label for a full date. */
 export function formatDateLabel(date: IsoDate, locale = DEFAULT_LOCALE): string {
   const { year, month, day } = parseIsoDate(date);
-  return new Intl.DateTimeFormat(locale, {
+  return dateFormat(locale, {
     day: "numeric",
     month: "short",
     year: "numeric",

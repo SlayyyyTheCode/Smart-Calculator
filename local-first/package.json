@@ -13,7 +13,8 @@
     "test:cold": "node cold-start.test.mjs",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "bench": "node bench.mjs",
-    "deploy:web": "node scripts/deploy-web.mjs --prod"
+    "deploy:web": "node scripts/deploy-web.mjs --prod",
+    "latency": "node latency.mjs"
   },
   "keywords": [],
   "author": "",

@@ -38,10 +38,30 @@ export const { evolu } = createLocalDb({
  * turning sync on with your own existing owner never wipes anything.
  */
 if (syncConfig && !syncConfig.adopted) {
-  // Marked adopted first. restoreAppOwner reloads the page, and an unmarked
-  // config would restore again on the way back up, forever.
+  // Marked adopted first. The page reloads below, and an unmarked config would
+  // restore again on the way back up, forever.
   writeSyncConfig({ ...syncConfig, adopted: true });
-  void evolu.restoreAppOwner(Mnemonic.orThrow(syncConfig.mnemonic), { reload: true });
+
+  /**
+   * Reloaded here rather than by passing `{ reload: true }`.
+   *
+   * Evolu's own reload navigates to the origin root, which throws away the
+   * query string. In production that is invisible — there is nothing in the URL
+   * to lose. Under test it silently moved the restored device onto a different
+   * database, because `?instance=` is what picks one, and onto the real
+   * calendar, because `?today=` is what pins it. The device came up empty and
+   * the failure read as "sync is broken" rather than "the URL was discarded".
+   *
+   * Worse, it hid itself: every restored device landed on the same default
+   * database, so a previous run's data could still be sitting there and the
+   * assertion would pass against a leftover rather than against sync.
+   *
+   * `location.reload()` keeps the URL, which is also what a user with anything
+   * in their address bar would expect.
+   */
+  void evolu
+    .restoreAppOwner(Mnemonic.orThrow(syncConfig.mnemonic), { reload: false })
+    .then(() => location.reload());
 }
 
 export const categoriesQuery = evolu.createQuery((db) =>

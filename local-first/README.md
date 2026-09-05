@@ -382,6 +382,42 @@ Daily use — the thing this app is actually for — is **under 100 ms to record
 expense** and **about 700 ms to cold start** with three years of history, and
 neither moves as the database grows.
 
+## Interaction latency
+
+`npm run latency` measures tap-to-painted **inside the page**: the click is
+dispatched and the clock read in page context, stopping after two animation
+frames, which is the first moment the new screen is actually on the glass.
+
+The earlier benchmark was measuring the wrong thing. It timed navigation through
+the More menu as a single number — two taps with a menu in between — and every
+reading crossed the Playwright boundary twice, carrying IPC no user experiences.
+It reported 99–147 ms for screens that were really taking 13–27 ms.
+
+At 6,000 transactions, every interaction, p95:
+
+| | p50 | p95 |
+|---|---|---|
+| dashboard / budgets / add tab | 9–13 ms | 17–19 ms |
+| open the More menu | 11 ms | 16 ms |
+| More → transactions | 16 ms | 29 ms |
+| More → where it went | 15 ms | 18 ms |
+| breakdown: switch period | 16 ms | 19 ms |
+| transactions: show 100 more | 30 ms | 41 ms |
+
+One thing was genuinely slow: **show 100 more, at 131 ms p95 and rising with
+every press**, because the cost is per row on screen rather than per row added.
+Two fixes, both worth having on their own:
+
+`Intl.NumberFormat` and `Intl.DateTimeFormat` were constructed on every call —
+about four hundred per render on a two-hundred-row list. They are now cached by
+locale and options in `@/lib/money` and `@/lib/date`, which is the one place
+both codebases read from. And each row is `memo`ised, so extending the window
+renders the hundred new rows rather than re-rendering all two hundred.
+
+Cold start with three years of history is ~700 ms, which is the SQLite wasm
+loading and is not an interaction; the sub-100 ms figures above are what happens
+once the app is open.
+
 ### Where it went — the donut, and choosing a period
 
 Spending by category over any period: six presets spanning days, months and
