@@ -491,6 +491,35 @@ Colours sweep the hue wheel once so sixteen dots stay tellable apart, with a
 neutral slate on Miscellaneous — a catch-all should not look like a category
 with an opinion — and none of them collide with the income colours.
 
+### The 2027 CPF rates, already loaded
+
+Two bands rise on 1 January 2027 — above 55 to 60 from 18% to 19%, above 60 to
+65 from 12.5% to 13% — and the phase-in coefficients for the $500–$750 band move
+with them, 0.54 to 0.57 and 0.375 to 0.39. Those are taken from the published
+table rather than derived, because they are not a fixed multiple of the
+percentage. The Ordinary Wage ceiling stays at $8,000, which the table confirms
+arithmetically: 19% of 8,000 is the $1,520 maximum it states.
+
+**The schedule is chosen by the date the wage is paid, not by the clock.** That
+is what makes the switch automatic *and* correct: quick add dates an entry today
+and today comes from the device's own calendar, so at midnight on 1 January 2027
+the next salary picks up the new table with nothing to update — while a December
+salary entered in January keeps December's rates, and a back-dated payslip keeps
+the figure that was actually deducted from it. Reading the clock instead would
+restate history every time a rate changed.
+
+Dates before 2026 fall back to the 2026 table. The app carries no earlier
+schedules, and that is a stated approximation rather than a silent one.
+
+**Adding those two rates found a bug in the rates already there.** The phase-in
+coefficients were floats, and `0.57 * 20000` is `11399.999999999998` in IEEE
+754, which floors to $113 where the table says $114. The four coefficients
+already in the file happened to land on the right side of the error; both new
+ones did not. They are integers in basis points now — the same reason the whole
+app holds money in cents, applied to a rule that had quietly been exempt from
+it. This is precisely how a rule survives for years and then pays somebody a
+dollar short.
+
 ### Income categories, CPF, and take-home pay
 
 Income splits into eight categories — Gross Income, General Income, Freelance

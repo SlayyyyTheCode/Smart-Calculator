@@ -117,6 +117,9 @@ export function QuickAdd({
       ? cpfContribution({
           grossMonthly: minorNow,
           age: ageOn(birthDate, occurredOn),
+          // The date on the entry, not today: a December salary recorded in
+          // January is still a December salary and takes December's rates.
+          onDate: occurredOn,
           residency: residency as CpfResidency,
         })
       : null;
@@ -306,7 +309,7 @@ export function QuickAdd({
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Age band {cpf.band}.
+                  Age band {cpf.band}, rates from {cpf.schedule}.
                   {cpf.cappedByCeiling
                     ? " Above the $8,000 Ordinary Wage ceiling, so the contribution stops there."
                     : ""}{" "}

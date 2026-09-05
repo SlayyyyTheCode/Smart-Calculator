@@ -196,6 +196,56 @@ await page.waitForTimeout(3000);
 const afterReload = await page.locator("main").innerText();
 check("all of it survives a restart", /\$4,800\.00/.test(afterReload), afterReload.replace(/\s+/g, " ").slice(0, 90));
 
+
+// ---- the 2027 rates switch on by themselves -----------------------------
+// Keyed to the date on the entry, not the wall clock, so a December salary
+// recorded in January keeps December's rates and a back-dated payslip keeps the
+// figure that was actually deducted. The automatic switch falls out of that:
+// quick add dates an entry today, so at the turn of the year the next salary
+// picks up the new table with nothing to update.
+{
+  const cross = async (onDate) => {
+    await page.click('[data-testid="tab-add"]');
+    await page.waitForTimeout(600);
+    await page.locator('label:has-text("Income")').first().click();
+    await page.waitForTimeout(300);
+    await page.selectOption("#category", { label: "Gross Income" });
+    await page.fill("#occurred-on", onDate);
+    await page.fill("#amount", "6000.00");
+    await page.waitForTimeout(700);
+    return (await page.locator('[data-testid="cpf-breakdown"]').innerText()).replace(/\s+/g, " ");
+  };
+
+  // Settings say born 1968, so this person is in the "above 55 to 60" band —
+  // one of the two the 2027 table moves.
+  await goTo("settings");
+  await page.selectOption('[data-testid="residency"]', "citizen_or_pr3");
+  await page.fill('[data-testid="birth-date"]', "1968-04-02");
+  await page.click('[data-testid="save-cpf"]');
+  await page.waitForTimeout(1400);
+
+  const dec = await cross("2026-12-31");
+  check("a 31 December wage uses the 2026 table", /\$1,080\.00/.test(dec) && /1 January 2026/.test(dec), dec.slice(0, 110));
+
+  const jan = await cross("2027-01-01");
+  check("a 1 January wage uses the 2027 table", /\$1,140\.00/.test(jan) && /1 January 2027/.test(jan), jan.slice(0, 110));
+
+  check("and take home moves with it", /\$4,860\.00/.test(jan), jan.slice(0, 130));
+
+  // The band that did not change must not move.
+  await goTo("settings");
+  await page.fill('[data-testid="birth-date"]', "1996-04-02");
+  await page.click('[data-testid="save-cpf"]');
+  await page.waitForTimeout(1400);
+  const younger2026 = await cross("2026-12-31");
+  const younger2027 = await cross("2027-01-01");
+  check(
+    "a band the 2027 table leaves alone does not move",
+    /\$1,200\.00/.test(younger2026) && /\$1,200\.00/.test(younger2027),
+    `${(younger2026.match(/\$[\d,]+\.\d{2}/) ?? [""])[0]} then ${(younger2027.match(/\$[\d,]+\.\d{2}/) ?? [""])[0]}`,
+  );
+}
+
 const real = errors.filter((e) => !/favicon|React DevTools|Failed to load resource/i.test(e));
 check("no page errors", real.length === 0, real.slice(0, 3).join(" | "));
 

@@ -5,7 +5,7 @@ import { Button } from "@app/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@app/components/ui/card";
 import { Field, Input } from "@app/components/ui/field";
 import { PageHeader } from "@app/components/ui/page-header";
-import { ageOn, type CpfResidency } from "@app/lib/domain/cpf";
+import { ageOn, scheduleOn, type CpfResidency } from "@app/lib/domain/cpf";
 import { formatMoney, parseAmount } from "@app/lib/money";
 
 import { evolu } from "../db";
@@ -276,7 +276,7 @@ export function Settings({
               {residencyDraft === NONE
                 ? "No CPF is deducted; salary is shown as entered."
                 : birthDraft
-                  ? `Age ${ageOn(birthDraft, TODAY)} today. Rates from 1 January 2026; only your own share is deducted, since the employer's was never part of your gross.`
+                  ? `Age ${ageOn(birthDraft, TODAY)} today. Rates from ${scheduleOn(TODAY).label}, chosen by the date on each entry; only your own share is deducted, since the employer's was never part of your gross.`
                   : "Add a date of birth to pick the age band."}
             </p>
           </form>
